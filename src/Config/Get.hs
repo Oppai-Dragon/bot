@@ -8,9 +8,8 @@ module Config.Get
     , parseRequestPath
     , getUnpackField
     , getKeyboard
+    , getRepeatMsg
     , getBot
-    , getInteger
-    , getText
     , getValue
     ) where
 
@@ -50,8 +49,10 @@ buildRequest :: Field -> Fields -> Config -> Request
 buildRequest path params conf =
     let
         initRequest = parseRequest_ $ T.unpack $ parseRequestPath path conf
-        maybeValue field = case getValue field conf of
+        maybeValue field = case getValue [field] conf of
             String text -> TE.encodeUtf8 text
+            Number num  -> TE.encodeUtf8 . T.pack . takeWhile (/='.') . show $ num
+            Bool bool   -> TE.encodeUtf8 . T.pack . show $ bool
             _           -> ""
         pairs = map (\x -> (TE.encodeUtf8 x, maybeValue x)) params
         request = (urlEncodedBody pairs initRequest) {method = "POST"}
@@ -78,11 +79,11 @@ parseRequestPath path conf =
         Just ch -> beforeParam <> paramValue <> afterParam
         Nothing -> path
 
-getUnpackField :: Field -> Config -> T.Text
+getUnpackField :: Field -> Config -> Field
 getUnpackField field conf =
-    case getValue field conf of
-        Object obj -> getText "got" obj
-        Null       -> ""
+    case getValue [field,"got"] conf of
+        (String text) -> text
+        Null          -> ""
 
 getKeyboard :: Config -> [(T.Text,Value)]
 getKeyboard conf =
@@ -90,23 +91,24 @@ getKeyboard conf =
         Just (Object obj) -> HM.toList obj
         _                 -> []
 
+getRepeatMsg :: Config -> Value
+getRepeatMsg conf =
+    let
+        Number repeatN = getValue ["repeatN"] conf
+        repeatNText = T.pack . takeWhile (/='.') $ show repeatN
+        String repeatMsg = getValue ["repeatMsg"] conf
+    in String $ T.unwords $
+    map (\x -> if x == "said" then "said " <> repeatNText else x)
+    $ T.words repeatMsg
+
 getBot :: Config -> Bot
-getBot = read . T.unpack . getText "bot"
+getBot conf =
+    let (String text) =  getValue ["bot"] conf
+    in read . T.unpack $ text
 
-getInteger :: Field -> Object -> Integer
-getInteger field obj =
-    case parseMaybe (.: field) obj of
-        Just number -> number
-        _           -> 0
-
-getText :: Field -> Object -> Field
-getText field obj =
-    case getValue field obj of
-        String text -> text
-        _           -> ""
-
-getValue :: Field -> Config -> Value
-getValue field conf =
-    case parseMaybe (.: field) conf of
-        Just value -> value
-        Nothing    -> Null
+getValue :: Fields -> Object -> Value
+getValue (field:rest) objOld =
+    case parseMaybe (.: field) objOld of
+        Just (Object objNew) -> getValue rest objNew
+        Just value           -> value
+        Nothing              -> Null
