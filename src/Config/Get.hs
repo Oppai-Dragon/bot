@@ -4,6 +4,7 @@ module Config.Get
     , getSendRequest
     , getRequest
     , buildRequest
+    , valueToInteger
     , parseFieldsFunc
     , parseRequestPath
     , getUnpackField
@@ -11,6 +12,7 @@ module Config.Get
     , getRepeatMsg
     , getBot
     , getValue
+    , getRandom
     ) where
 
 import Bot
@@ -20,10 +22,16 @@ import           Data.Aeson
 import           Data.Aeson.Types (parseMaybe)
 import qualified Data.ByteString.Lazy   as BSL
 import qualified Data.HashMap.Strict    as HM
+import qualified Data.List              as L
 import qualified Data.Text              as T
 import qualified Data.Text.Encoding     as TE
 
 import Network.HTTP.Client
+
+import System.Random
+    ( getStdRandom
+    , randomR
+    )
 
 type Field = T.Text
 type Fields = [Field]
@@ -49,14 +57,20 @@ buildRequest :: Field -> Fields -> Config -> Request
 buildRequest path params conf =
     let
         initRequest = parseRequest_ $ T.unpack $ parseRequestPath path conf
-        maybeValue field = case getValue [field] conf of
+        toBS field = case getValue [field] conf of
             String text -> TE.encodeUtf8 text
-            Number num  -> TE.encodeUtf8 . T.pack . takeWhile (/='.') . show $ num
+            Number num  -> TE.encodeUtf8 . T.pack . show . valueToInteger $ Number num
             Bool bool   -> TE.encodeUtf8 . T.pack . show $ bool
             _           -> ""
-        pairs = map (\x -> (TE.encodeUtf8 x, maybeValue x)) params
+        pairs = map (\x -> (TE.encodeUtf8 x, toBS x)) params
         request = (urlEncodedBody pairs initRequest) {method = "POST"}
     in request
+
+valueToInteger :: Value -> Integer
+valueToInteger (Number num) =
+    case parseMaybe (.: "id") (HM.fromList [("id",Number num)]) of
+        Just n  -> n
+        Nothing -> 0
 
 parseFieldsFunc :: Fields -> Value -> Value
 parseFieldsFunc []           value           = value
@@ -112,3 +126,6 @@ getValue (field:rest) objOld =
         Just (Object objNew) -> getValue rest objNew
         Just value           -> value
         Nothing              -> Null
+
+getRandom :: IO Integer
+getRandom = getStdRandom (randomR (1,100000000000))

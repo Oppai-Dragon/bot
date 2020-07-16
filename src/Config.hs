@@ -53,8 +53,16 @@ setConfig = do
                     Just (Object obj) -> obj
                     _                 -> HM.empty
             _                 -> HM.empty
-    let botConfig = HM.union config bot
+    let withoutBots =
+            case parseMaybe (.: "bots") config :: Maybe [T.Text] of
+                Just textArr -> iterateList HM.delete config textArr
+                _            -> config
+    let botConfig = HM.union withoutBots bot
     return botConfig
+
+iterateList :: (a -> b -> b) -> b -> [a] -> b
+iterateList func ini [x]    = func x ini
+iterateList func ini (x:xs) = func x $ iterateList func ini xs
 
 testConfig = object
     ["bot" .= String "telegram"
