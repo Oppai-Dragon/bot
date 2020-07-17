@@ -80,16 +80,16 @@ updateConfig = do
 updateRepeatN :: Message -> StateT Config IO ()
 updateRepeatN msg = do
     config <- get
-    let String lastMsg = getValue ["lastMsg"] config
+    let lastMsg = getValue ["lastMsg"] config
     let msgStr = T.unpack msg
     let greatThenNull n = if n <= 0 then 1 else n
     let oldRepeatN = getValue ["repeatN"] config
     let repeatN = case lastMsg of
-            "/repeat" -> Number $
+            String "/repeat" -> Number $
                 if and $ map C.isDigit msgStr
                     then greatThenNull $ read msgStr
                     else 1
-            _         -> oldRepeatN
+            _                -> oldRepeatN
     put $ HM.insert "repeatN" repeatN config
 
 msgHandler :: Message -> StateT Config IO ()

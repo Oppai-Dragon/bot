@@ -66,11 +66,6 @@ iterateList func ini (x:xs) = func x $ iterateList func ini xs
 testConfig :: Object
 testConfig = HM.fromList
     [("bot", String "vk")
-    ,("bots", (Array . V.fromList)
-        [ "vk"
-        , "telegram"
-        ]
-     )
     ,("start_request" , (Object . HM.fromList)
         [("path", String "https://api.vk.com/method/groups.getLongPollServer")
         ,("params" , (Array . V.fromList)
@@ -95,7 +90,6 @@ testConfig = HM.fromList
     ,("group_id", Number 152071194)
     ,("v", String "5.103")
     ,("repeatN", Number 1)
-    ,("lastMsg", String "")
     ,("repeatMsg", String "At the moment, I repeat what you said times. Press the button with the number, with the desired number of repetitions.")
     ,("helpMsg", String "Hey. I am a simple echo-bot - I write back what they wrote to me. If you want to change how many times I reply to one of your messages, then write /repeat ")
     ,("logLevel", String "DEBUG")

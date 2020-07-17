@@ -66,7 +66,6 @@ updateAttachments = do
                         ""      -> ""
                         text    -> T.tail text
                 Nothing     -> String ""
-    lift . lift $ print attachments
     lift . put $ HM.insert "attachment" attachments config
 
 getVkMsg :: ReaderT Object (StateT Config IO) Message
