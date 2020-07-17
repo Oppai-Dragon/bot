@@ -35,13 +35,13 @@ liveSession = do
     response <- lift $ httpJSON request
     let json = getResponseBody response
     let bot = getBot config
-    updates <- unpackUpdates json
-    runReaderT updateConfig ((updates,json),bot)
-    bool <- runReaderT isMsgNotNeed (updates,bot)
-    if bool
+    updates' <- unpackUpdates json
+    updates <- checkUpdates updates'
+    lift $ print updates
+    if HM.null updates
         then liveSession
-        else echoMessage
-    liveSession
+        else runReaderT updateConfig ((updates,json),bot)
+        >> echoMessage
 
 echoMessage :: StateT Config IO ()
 echoMessage = do
@@ -52,7 +52,7 @@ echoMessage = do
     sendMessage repeatN
 
 sendMessage :: Integer -> StateT Config IO ()
-sendMessage 0 = return ()
+sendMessage 0 = liveSession
 sendMessage n = do
     updateRandomId
     config <- get

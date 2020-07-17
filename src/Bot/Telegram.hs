@@ -22,10 +22,8 @@ type Message = T.Text
 
 getKeysTelegram :: Object -> ReaderT Bot (StateT Config IO) Object
 getKeysTelegram obj =
-    let
-        updateId = getValue ["update_id"] obj
-        chatId = getValue ["message","chat","id"] obj
-    in return $ HM.fromList [("offset",updateId),("chat_id",chatId)]
+    let chatId = getValue ["message","chat","id"] obj
+    in return $ HM.fromList [("chat_id",chatId)]
 
 updateTelegram :: ReaderT Object (StateT Config IO) Message
 updateTelegram = do
@@ -36,11 +34,9 @@ updateKeys :: ReaderT Object (StateT Config IO) ()
 updateKeys = do
     config <- lift $ get
     updates <- ask
-    let updateIdOld = getValue ["offset"] config
-    let updateIdNew = getValue ["update_id"] updates
+    let updateId = getValue ["update_id"] updates
     let chatId = getValue ["message","chat","id"] updates
-    let isSendMsg = Bool $ (/=) updateIdOld updateIdNew
-    let localConfig = HM.fromList [("offset",updateIdNew),("chat_id",chatId),("isSendMsg",isSendMsg)]
+    let localConfig = HM.fromList [("offset",updateId),("chat_id",chatId)]
     lift $ put $ HM.union localConfig config
 
 getTelegramMsg :: ReaderT Object (StateT Config IO) Message

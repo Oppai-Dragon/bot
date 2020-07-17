@@ -3,9 +3,11 @@ module Config.Get
     , getAskRequest
     , getSendRequest
     , getRequest
+    , getRequestObj
+    , getRequestPath
+    , getRequestParams
     , buildRequest
     , valueToInteger
-    , parseFieldsFunc
     , parseRequestPath
     , getUnpackField
     , getKeyboard
@@ -22,6 +24,7 @@ import           Data.Aeson
 import           Data.Aeson.Types (parseMaybe)
 import qualified Data.ByteString.Lazy   as BSL
 import qualified Data.HashMap.Strict    as HM
+import qualified Data.Vector            as V
 import qualified Data.List              as L
 import qualified Data.Text              as T
 import qualified Data.Text.Encoding     as TE
@@ -43,15 +46,35 @@ getSendRequest = getRequest "send_request"
 
 getRequest :: Field -> Config -> Request
 getRequest nameReq conf =
-    case parseMaybe (.: nameReq) conf of
-        Just (Object obj) ->
-            case parseMaybe (.: "path") obj of
-                Just (String path) ->
-                    case parseMaybe (.: "params") obj :: Maybe [T.Text] of
-                        Just params -> buildRequest path params conf
-                        _           -> defaultRequest
-                _                  -> defaultRequest
-        _                 -> defaultRequest
+    let
+        requestObj = getRequestObj nameReq conf
+        requestPath = getRequestPath requestObj
+        requestParams = getRequestParams requestObj
+        isRequestCollected = all not
+            [HM.null requestObj
+            ,T.null requestPath
+            ,null requestParams]
+    in if isRequestCollected
+        then buildRequest requestPath requestParams conf
+        else defaultRequest
+
+getRequestObj :: Field -> Config -> Object
+getRequestObj field conf =
+    case getValue [field] conf of
+        Object obj -> obj
+        _          -> HM.empty
+
+getRequestPath :: Object -> Field
+getRequestPath obj =
+    case getValue ["path"] obj of
+        String path -> path
+        _           -> ""
+
+getRequestParams :: Object -> Fields
+getRequestParams obj =
+    case getValue ["params"] obj of
+        Array vector -> map (\(String x) -> x) $ V.toList vector
+        _            -> []
 
 buildRequest :: Field -> Fields -> Config -> Request
 buildRequest path params conf =
@@ -71,14 +94,6 @@ valueToInteger (Number num) =
     case parseMaybe (.: "id") (HM.fromList [("id",Number num)]) of
         Just n  -> n
         Nothing -> 0
-
-parseFieldsFunc :: Fields -> Value -> Value
-parseFieldsFunc []           value           = value
-parseFieldsFunc (field:rest) (Object objOld) =
-    case parseMaybe (.: field) objOld of
-        Just (Object objNew) ->
-            parseFieldsFunc rest (Object objNew)
-        _                    -> Null
 
 parseRequestPath :: Field -> Config -> Field
 parseRequestPath path conf =
@@ -121,6 +136,7 @@ getBot conf =
     in read . T.unpack $ text
 
 getValue :: Fields -> Object -> Value
+getValue []           obj    = Object obj
 getValue (field:rest) objOld =
     case parseMaybe (.: field) objOld of
         Just (Object objNew) -> getValue rest objNew

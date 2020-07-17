@@ -1,7 +1,8 @@
 module Helpers
     ( getKeys
+    , getLastObj
+    , checkUpdates
     , updateConfig
-    , isMsgNotNeed
     , updateRepeatN
     , msgHandler
     , updateRandomId
@@ -53,6 +54,16 @@ getLastObj value =
         Just objArr -> last objArr
         Nothing     -> HM.empty
 
+checkUpdates :: Object -> StateT Config IO Object
+checkUpdates updates = do
+    config <- get
+    let updateIdOld = getValue ["offset"] config
+    case HM.lookup "update_id" updates of
+        Just value -> if updateIdOld == value
+            then return HM.empty
+            else return updates
+        Nothing    -> return updates
+
 updateConfig :: ReaderT ((Object,Value),Bot) (StateT Config IO) ()
 updateConfig = do
     ((updates,Object response),bot) <- ask
@@ -63,27 +74,19 @@ updateConfig = do
     lift $ updateRepeatN msg
     lift $ msgHandler msg
 
-isMsgNotNeed :: ReaderT (Object,Bot) (StateT Config IO) Bool
-isMsgNotNeed = do
-    (updates,bot) <- ask
-    config <- lift get
-    let Bool isSendMsg = getValue ["isSendMsg"] config
-    case bot of
-        Vk       -> return $ HM.null updates
-        Telegram -> return $ or [HM.null updates, not isSendMsg]
-
-
 updateRepeatN :: Message -> StateT Config IO ()
 updateRepeatN msg = do
     config <- get
     let String lastMsg = getValue ["lastMsg"] config
     let msgStr = T.unpack msg
     let greatThenNull n = if n <= 0 then 1 else n
-    let repeatN = Number $ case lastMsg of
-            "/repeat" -> if and $ map C.isDigit msgStr
-                then greatThenNull $ read msgStr
-                else 1
-            _         -> 1
+    let oldRepeatN = getValue ["repeatN"] config
+    let repeatN = case lastMsg of
+            "/repeat" -> Number $
+                if and $ map C.isDigit msgStr
+                    then greatThenNull $ read msgStr
+                    else 1
+            _         -> oldRepeatN
     put $ HM.insert "repeatN" repeatN config
 
 msgHandler :: Message -> StateT Config IO ()

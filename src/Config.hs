@@ -4,6 +4,7 @@ module Config
     , set
     , setPath
     , setConfig
+    , iterateList
     , testConfig
     ) where
 
@@ -64,50 +65,40 @@ iterateList :: (a -> b -> b) -> b -> [a] -> b
 iterateList func ini [x]    = func x ini
 iterateList func ini (x:xs) = func x $ iterateList func ini xs
 
-testConfig = object
-    ["bot" .= String "telegram"
-    , "vk" .= object
-        [ "start_request" .= object
-            [ "path" .= String "https://api.vk.com/method/groups.getLongPollServer?"
-            , "params" .= (Array . V.fromList . map String)
-                [ "group_id"
-                , "access_token"
-                , "v"
-                ]
-            ]
-        , "send_request" .= object
-            [ "path" .= String "https://api.vk.com/method/message.send?"
-            , "params" .= (Array . V.fromList . map String)
-                [ "user_id"
-                , "random_id"
-                , "peer_id"
-                , "message"
-                , "keyboard"
-                , "access_token"
-                , "v"
-                ]
-            ]
-        , "access_token" .= String "d044ae47cea77daa95aa6e5a49fe7fbe5c5deb1fdf54eaf13b23c8d5f88fb277de05702378262ef53d1b3"
-        , "keyboard" .= String "{\"one_time\":true,\"buttons\":[[{\"action\":{\"type\":\"text\",\"payload\":\"{\\\"button\\\": \\\"1\\\"}\",\"label\":\"1\"},\"color\":\"primary\"},{\"action\":{\"type\":\"text\",\"payload\":\"{\\\"button\\\": \\\"1\\\"}\",\"label\":\"2\"},\"color\":\"primary\"},{\"action\":{\"type\":\"text\",\"payload\":\"{\\\"button\\\": \\\"1\\\"}\",\"label\":\"3\"},\"color\":\"primary\"},{\"action\":{\"type\":\"text\",\"payload\":\"{\\\"button\\\": \\\"1\\\"}\",\"label\":\"4\"},\"color\":\"primary\"},{\"action\":{\"type\":\"text\",\"payload\":\"{\\\"button\\\": \\\"1\\\"}\",\"label\":\"5\"},\"color\":\"primary\"}]]}"
-        , "peer_id" .= String "200000000099"
-        , "group_id" .= String "152071194"
-        , "v" .= String "5.103"
+testConfig :: Object
+testConfig = HM.fromList
+    [("bot", String "vk")
+    ,("bots", (Array . V.fromList)
+        [ "vk"
+        , "telegram"
         ]
-    , "telegram" .= object
-        [ "start_uri" .= String "https://api.telegram.org/bot<access_token>/getUpdates?"
-        , "timeout" .= String "30"
-        , "access_token" .= String "1222090060:AAG110wvYURl-eheQ2eIyDCSWaY3KWxve0s"
-        , "keyb" .= String "{\"keyboard\":[[{\"text\":\"1\"},{\"text\":\"2\"},{\"text\":\"3\"},{\"text\":\"4\"},{\"text\":\"5\"}]],\"resize_keyboard\":true,\"one_time_keyboard\":true}"
-        , "proxyHost" .= String "59.29.245.151"
-        , "proxyPort" .= String "3128"
-        , "offset" .= String ""
-        , "chat_id" .= String ""
-        , "isSendMessage" .= String "True"
+     )
+    ,("start_request" , (Object . HM.fromList)
+        [("path", String "https://api.vk.com/method/groups.getLongPollServer")
+        ,("params" , (Array . V.fromList)
+            [ "group_id"
+            , "access_token"
+            , "v"
+            ]
+            )
+        ,("got", String "response")
         ]
-    , "repeatN" .= String "1"
-    , "lastMsg" .= String ""
-    , "repeatMsg" .= String "At the moment, I repeat what you said times. Press the button with the number, with the desired number of repetitions."
-    , "helpMsg" .= String "Hey. I am a simple echo-bot - I write back what they wrote to me. If you want to change how many times I reply to one of your messages, then write /repeat "
-    , "testMsg" .= String "Please use one human language: Russian or English. If you write in Russian, please use only Russian letters."
-    , "logLevel" .= String "DEBUG"
+     )
+    ,("random_id", Number 0)
+    ,("message", String "")
+    ,("msgField", String "message")
+    ,("attachment", String "")
+    ,("access_token", String "d044ae47cea77daa95aa6e5a49fe7fbe5c5deb1fdf54eaf13b23c8d5f88fb277de05702378262ef53d1b3")
+    ,("keyboard", (Object . HM.fromList)
+        [("keyboard", String "{\"one_time\":true,\"buttons\":[[{\"action\":{\"type\":\"text\",\"payload\":\"{\\\"button\\\": \\\"1\\\"}\",\"label\":\"1\"},\"color\":\"primary\"},{\"action\":{\"type\":\"text\",\"payload\":\"{\\\"button\\\": \\\"1\\\"}\",\"label\":\"2\"},\"color\":\"primary\"},{\"action\":{\"type\":\"text\",\"payload\":\"{\\\"button\\\": \\\"1\\\"}\",\"label\":\"3\"},\"color\":\"primary\"},{\"action\":{\"type\":\"text\",\"payload\":\"{\\\"button\\\": \\\"1\\\"}\",\"label\":\"4\"},\"color\":\"primary\"},{\"action\":{\"type\":\"text\",\"payload\":\"{\\\"button\\\": \\\"1\\\"}\",\"label\":\"5\"},\"color\":\"primary\"}]]}")
+        ]
+     )
+    ,("peer_id", Number 200000000099)
+    ,("group_id", Number 152071194)
+    ,("v", String "5.103")
+    ,("repeatN", Number 1)
+    ,("lastMsg", String "")
+    ,("repeatMsg", String "At the moment, I repeat what you said times. Press the button with the number, with the desired number of repetitions.")
+    ,("helpMsg", String "Hey. I am a simple echo-bot - I write back what they wrote to me. If you want to change how many times I reply to one of your messages, then write /repeat ")
+    ,("logLevel", String "DEBUG")
     ]
