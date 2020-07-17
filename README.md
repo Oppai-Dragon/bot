@@ -2,7 +2,7 @@
 
 This is a simple echo bot - it sends back what it received. He works in a telegram and in VK.
 
-## Getting Started
+## How to install
 
 ### Step 1 - config changes
 
