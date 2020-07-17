@@ -199,9 +199,17 @@ Also after the assembly bot-exe.exe appeared, it is located in bot\.stack-work\i
 
 ### Modules
 
-* src/Config.hs - config is collecting by ```haskell setConfig :: IO ()```
+* src/Config.hs - config is collecting by ```setConfig :: IO ()```.
+* src/Config/Get.hs - Functions for getting certain values ​​from the config.
+* src/Lib.hs - the bot's activity follows the scenario described here.
+* src/Bot/<Bot>.hs - a certain functionality peculiar to this bot is prescribed.
+* src/Helpers.hs - bad name. But here are the functions that update the config using functions from src/Bot/<Bot>.hs.
+* src/Log.hs and src/Log/<>.hs - still working on it.
+* src/Tests.hs - a function that collects tests that are written in different modules.
 
 ### Adding new bots
+
+Let the bot's name be Li. You need to create a folder in src/Bot/Li and the file src/Bot/Li/Li.json in it. And fill it in according to other <Bot>.json.
 
 ## Packages
 
