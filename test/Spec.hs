@@ -1,4 +1,4 @@
 import Tests
 
 main :: IO ()
-main = runTest
+main = runTest >> return ()

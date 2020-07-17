@@ -1,12 +1,14 @@
-module Log where
+module Log
+    ( Priority (..)
+    ) where
 
 --I'm just newby. And because of it i just realize this Log like a hslogger
 
 data Priority =
-    DEBUG       -- Debug messages           == 0
-    | INFO      -- Information              == 1
-    | WARNING   -- General Warnings         == 3
-    | ERROR     -- General Errors           == 4
+    DEBUG       -- Debug messages
+    | INFO      -- Information
+    | WARNING   -- General Warnings
+    | ERROR     -- General Errors
 
 instance Bounded Priority where
     minBound = DEBUG
@@ -38,17 +40,3 @@ instance Show Priority where
         INFO -> "INFO"
         WARNING -> "WARNING"
         ERROR -> "ERROR"
-
------------------------------------Basic---------------------------------------------------
-logM  -- Log a message using the given logger at a given priority
-    :: String   -- Name of the logger to use
-    -> Priority -- Priority of this message
-    -> String   -- The log text itself
-    -> IO ()
-logM nameLog priority text = putStrLn $
-    "[" <> show priority <> "] " <> nameLog <> text
-------------------------------Utility Functions--------------------------------------------
-debugM = \x -> logM x DEBUG
-infoM = \x -> logM x INFO
-warningM = \x -> logM x WARNING
-errorM = \x -> logM x ERROR

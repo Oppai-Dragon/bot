@@ -45,21 +45,19 @@ setPath path =
     fmap (flip (<>) $ "\\src\\" <> path)
     $ parsePath <*> getCurrentDirectory
 
+setLogConfig :: IO Config
+setLogConfig = set $ setPath "Log\\Log.json"
+
 setConfig :: IO Config
 setConfig = do
-    config <- set $ setPath "MyConfig.json"
+    config <- set $ setPath "Config.json"
     let bot = case parseMaybe (.: "bot") config of
-            Just (String name) ->
-                case parseMaybe (.: name) config of
-                    Just (Object obj) -> obj
-                    _                 -> HM.empty
-            _                 -> HM.empty
-    let withoutBots =
-            case parseMaybe (.: "bots") config :: Maybe [T.Text] of
-                Just textArr -> iterateList HM.delete config textArr
-                _            -> config
-    let botConfig = HM.union withoutBots bot
-    return botConfig
+            Just (String name) -> name
+            _                  -> ""
+    let botPath = T.unpack $ "Bot\\" <> bot <> "\\" <> bot <> ".json"
+    botConfig <- set $ setPath botPath
+    logConfig <- setLogConfig
+    return $ HM.unions [botConfig,config,logConfig]
 
 iterateList :: (a -> b -> b) -> b -> [a] -> b
 iterateList func ini [x]    = func x ini

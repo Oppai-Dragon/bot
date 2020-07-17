@@ -51,7 +51,10 @@ getLastObj :: Value -> Object
 getLastObj value =
     let arrayObj = HM.singleton "array" value
     in case parseMaybe (.: "array") arrayObj :: Maybe [Object] of
-        Just objArr -> last objArr
+        Just objArr ->
+            if null objArr
+                then HM.empty
+                else last objArr
         Nothing     -> HM.empty
 
 checkUpdates :: Object -> StateT Config IO Object

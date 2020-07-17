@@ -37,7 +37,6 @@ liveSession = do
     let bot = getBot config
     updates' <- unpackUpdates json
     updates <- checkUpdates updates'
-    lift $ print updates
     if HM.null updates
         then liveSession
         else runReaderT updateConfig ((updates,json),bot)

@@ -6,7 +6,7 @@ This is a simple echo bot - it sends back what it received. He works in a telegr
 
 ### Step 1 - config changes
 
-After unpacking the repository, in the folder with the files, change the name of the file OurConfig.json to MyConfig.json. Now open it.
+#### src/Config.json.
 
 ```json
 { "bot":"telegram"
@@ -14,89 +14,65 @@ After unpacking the repository, in the folder with the files, change the name of
     [ "vk"
     , "telegram"
     ]
-, "vk":
-    { "start_request":
-        { "path":"https://api.vk.com/method/groups.getLongPollServer"
-        , "params":
-            [ "group_id"
-            , "access_token"
-            , "v"
-            ]
-        , "got":"response"
-        }
-    , "ask_request":
-        { "path":"<server>"
-        , "params":
-            [ "act"
-            , "key"
-            , "wait"
-            , "mode"
-            , "ts"
-            ]
-        , "got":"updates"
-        }
-    , "send_request":
-        { "path":"https://api.vk.com/method/messages.send"
-        , "params":
-            [ "user_id"
-            , "random_id"
-            , "peer_id"
-            , "message"
-            , "attachment"
-            , "access_token"
-            , "v"
-            ]
-        }
-    , "act":"a_check"
-    , "wait":25
-    , "mode":2
-    , "msgField":"message"
-    , "access_token":""
-    , "keyboard":
-        { "keyboard":"{\"one_time\":true,\"buttons\":[[{\"action\":{\"type\":\"text\",\"payload\":\"{\\\"button\\\": \\\"1\\\"}\",\"label\":\"1\"},\"color\":\"primary\"},{\"action\":{\"type\":\"text\",\"payload\":\"{\\\"button\\\": \\\"1\\\"}\",\"label\":\"2\"},\"color\":\"primary\"},{\"action\":{\"type\":\"text\",\"payload\":\"{\\\"button\\\": \\\"1\\\"}\",\"label\":\"3\"},\"color\":\"primary\"},{\"action\":{\"type\":\"text\",\"payload\":\"{\\\"button\\\": \\\"1\\\"}\",\"label\":\"4\"},\"color\":\"primary\"},{\"action\":{\"type\":\"text\",\"payload\":\"{\\\"button\\\": \\\"1\\\"}\",\"label\":\"5\"},\"color\":\"primary\"}]]}"
-        }
-    , "peer_id":0
-    , "group_id":0
-    , "v":"5.103"
-    }
-, "telegram":
-    { "start_request":
-        { "path":"https://api.telegram.org/bot<access_token>/getUpdates"
-        , "params":
-            [ "timeout"
-            ]
-        , "got":"result"
-        }
-    , "ask_request":
-        { "path":"https://api.telegram.org/bot<access_token>/getUpdates"
-        , "params":
-            [ "timeout"
-            , "offset"
-            ]
-        , "got":"result"
-        }
-    , "send_request":
-        { "path":"https://api.telegram.org/bot<access_token>/sendMessage"
-        , "params":
-            [ "chat_id"
-            , "text"
-            ]
-        }
-    , "timeout":30
-    , "access_token":""
-    , "keyboard":
-        { "reply_markup":"{\"keyboard\":[[{\"text\":\"1\"},{\"text\":\"2\"},{\"text\":\"3\"},{\"text\":\"4\"},{\"text\":\"5\"}]],\"resize_keyboard\":true,\"one_time_keyboard\":true}"
-        }
-    , "isSendMsg":true
-    , "msgField":"text"
-    }
 , "repeatN":1
 , "repeatMsg":"At the moment, I repeat what you said times. Press the button with the number, with the desired number of repetitions."
 , "helpMsg":"Hey. I am a simple echo-bot - I write back what they wrote to me. If you want to change how many times I reply to one of your messages, then write /repeat "
 , "logLevel":"DEBUG"
 }
+}
 ```
-#### VK Bot
+1. bot:
+
+
+#### VK Bot src/Bot/Vk/Vk.json
+
+```json
+{ "start_request":
+    { "path":"https://api.vk.com/method/groups.getLongPollServer"
+    , "params":
+        [ "group_id"
+        , "access_token"
+        , "v"
+        ]
+    , "got":"response"
+    }
+, "ask_request":
+    { "path":"<server>"
+    , "params":
+        [ "act"
+        , "key"
+        , "wait"
+        , "mode"
+        , "ts"
+        ]
+    , "got":"updates"
+    }
+, "send_request":
+    { "path":"https://api.vk.com/method/messages.send"
+    , "params":
+        [ "user_id"
+        , "random_id"
+        , "peer_id"
+        , "message"
+        , "attachment"
+        , "access_token"
+        , "v"
+        ]
+    }
+, "act":"a_check"
+, "wait":25
+, "mode":2
+, "msgField":"message"
+, "access_token":""
+, "keyboard":
+    { "keyboard":"{\"one_time\":true,\"buttons\":[[{\"action\":{\"type\":\"text\",\"payload\":\"{\\\"button\\\": \\\"1\\\"}\",\"label\":\"1\"},\"color\":\"primary\"},{\"action\":{\"type\":\"text\",\"payload\":\"{\\\"button\\\": \\\"1\\\"}\",\"label\":\"2\"},\"color\":\"primary\"},{\"action\":{\"type\":\"text\",\"payload\":\"{\\\"button\\\": \\\"1\\\"}\",\"label\":\"3\"},\"color\":\"primary\"},{\"action\":{\"type\":\"text\",\"payload\":\"{\\\"button\\\": \\\"1\\\"}\",\"label\":\"4\"},\"color\":\"primary\"},{\"action\":{\"type\":\"text\",\"payload\":\"{\\\"button\\\": \\\"1\\\"}\",\"label\":\"5\"},\"color\":\"primary\"}]]}"
+    }
+, "peer_id":
+, "group_id":
+, "v":"5.103"
+}
+```
+
 To work VK bot you must have 3 fields correctly filled in: accessT, peerId, societyId.
 1. accessT: this is the access token.
    - [This is the documentation for receiving it.](https://vk.com/dev/bots_docs?f=1.1.%20%D0%9F%D0%BE%D0%BB%D1%83%D1%87%D0%B5%D0%BD%D0%B8%D0%B5%20%D0%BA%D0%BB%D1%8E%D1%87%D0%B0%20%D0%B4%D0%BE%D1%81%D1%82%D1%83%D0%BF%D0%B0)
@@ -118,7 +94,41 @@ To work VK bot you must have 3 fields correctly filled in: accessT, peerId, soci
 ![HelperWithSocietyId](images/helpWithSocietyId.PNG)
 
 
-#### Telegram Bot
+#### Telegram Bot src/Bot/Telegram/Telegram.json
+
+```json
+{ "start_request":
+    { "path":"https://api.telegram.org/bot<access_token>/getUpdates"
+    , "params":
+        [ "timeout"
+        ]
+    , "got":"result"
+    }
+, "ask_request":
+    { "path":"https://api.telegram.org/bot<access_token>/getUpdates"
+    , "params":
+        [ "timeout"
+        , "offset"
+        ]
+    , "got":"result"
+    }
+, "send_request":
+    { "path":"https://api.telegram.org/bot<access_token>/sendMessage"
+    , "params":
+        [ "chat_id"
+        , "text"
+        ]
+    }
+, "timeout":30
+, "access_token":""
+, "keyboard":
+    { "reply_markup":"{\"keyboard\":[[{\"text\":\"1\"},{\"text\":\"2\"},{\"text\":\"3\"},{\"text\":\"4\"},{\"text\":\"5\"}]],\"resize_keyboard\":true,\"one_time_keyboard\":true}"
+    }
+, "isSendMsg":true
+, "msgField":"text"
+}
+```
+
 For the telegram bot to work, you must fill out accessT, nameBot.
 The telegram documentation describes well how to get the values you need, so [here](https://tlgrm.ru/docs/bots).
 If you have problems with the documentation, then just write this bot in a telegram - [@BotFather](https://tele.gs/botfather) .

@@ -24,7 +24,7 @@ parsePathTest =
 setPathTest =
     TestCase $
     assertEqual "for (setPath \"Config.json\")"
-    ((unsafePerformIO getCurrentDirectory) <> "\\Config.json")
+    ((unsafePerformIO getCurrentDirectory) <> "\\src\\Config.json")
     $ (unsafePerformIO . setPath) "Config.json"
 
 iterateListTest =
