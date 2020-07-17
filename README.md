@@ -115,9 +115,9 @@ To work VK bot you must have 3 fields correctly filled in: accessT, peerId, soci
    - Bots need community permission to send messages. And his conversation.
    - Then create a chat. And enter it by clicking on the icon.
    - After they entered the chat, a number appeared in the address bar. We only need a number. In my example, this is the number 101. It needs to be entered between double quotes as the value of the peerId field.
-![HelperPeerId](images\helpWithPeerId.png)
+![HelperPeerId](images/helpWithPeerId.png)
 3. societyId: This is the easiest, go to your community and there will be a number in the address bar.
-![HelperWithSocietyId](images\helpWithSocietyId.PNG)
+![HelperWithSocietyId](images/helpWithSocietyId.PNG)
 
 
 #### Telegram Bot
@@ -159,7 +159,7 @@ If problems arise at this or subsequent stages. I left my contacts at the very e
 
 ### Step 3 - explanation of work
 The logic of the beginning of correspondence is this: since the bot writes to the user on behalf of the community, the user must allow this community to send messages to him. After the user writes a message to the general community conversation that you created in the first step, the bot will send you an answer to the new correspondence that he created for you. Now you can chat with him using the new correspondence. To change the bot that you want to run, just change its name in MyConfig.json.
-![HelpWithNotification](images\helpWithNotification.png)
+![HelpWithNotification](images/helpWithNotification.png)
 
 You can start the application from git bash with this line.
 ```git
