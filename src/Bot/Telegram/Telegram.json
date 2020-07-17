@@ -1,0 +1,30 @@
+{ "start_request":
+    { "path":"https://api.telegram.org/bot<access_token>/getUpdates"
+    , "params":
+        [ "timeout"
+        ]
+    , "got":"result"
+    }
+, "ask_request":
+    { "path":"https://api.telegram.org/bot<access_token>/getUpdates"
+    , "params":
+        [ "timeout"
+        , "offset"
+        ]
+    , "got":"result"
+    }
+, "send_request":
+    { "path":"https://api.telegram.org/bot<access_token>/sendMessage"
+    , "params":
+        [ "chat_id"
+        , "text"
+        ]
+    }
+, "timeout":30
+, "access_token":""
+, "keyboard":
+    { "reply_markup":"{\"keyboard\":[[{\"text\":\"1\"},{\"text\":\"2\"},{\"text\":\"3\"},{\"text\":\"4\"},{\"text\":\"5\"}]],\"resize_keyboard\":true,\"one_time_keyboard\":true}"
+    }
+, "isSendMsg":true
+, "msgField":"text"
+}
