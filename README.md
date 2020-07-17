@@ -179,7 +179,7 @@ Also after the assembly botvk2-exe.exe appeared, it is located in botvk2\.stack-
 * [HUnit](https://hackage.haskell.org/package/HUnit) - It’s easy to write tests with this.
 * [vector](https://hackage.haskell.org/package/vector), [unordered-containers](https://hackage.haskell.org/package/unordered-containers) - For constructing Value from aeson.
 * [transformers](https://hackage.haskell.org/package/transformers) - For architecture.
-* [directory] - To read the config regardless of the position of the repository on disk.
+* [directory](https://hackage.haskell.org/package/directory) - To read the config regardless of the position of the repository on disk.
 
 ## Authors
 
