@@ -128,16 +128,13 @@ Next I will explain the meaning of the remaining fields, so if you are not inter
 
 1. keyb: the value is json as a string. This is the keyboard that becomes visible if you write the /repeat command to the bot.
 2. nameBot: the name of the bot that you give in correspondence with the [@BotFather](https://tele.gs/botfather).
-3. proxyHost, proxyPort: requests for bot telegrams are sent through a proxy. If the entered proxy has stopped working, change it by finding a new one [here](http://spys.one/en/https-ssl-proxy/). You need an HTTP proxy.
-4. updateId, chatId, isSendMessage: the first two parameters are obtained during the operation of the bot, and the last parameter should NOT be touched.
-5. repeatN: the value is the initial number of bot retries per message.
-6. v: the version of the API used by the server. Methods change with versions over time, so it’s better not to touch this value.
-7. lastMsg, repeatMsg, helpMsg, testMsg: all fields that end in -Msg serve only to simplify so as not to clog the code.
-   - lastMsg: this is just the last message sent.
+3. updateId, chatId, isSendMessage: the first two parameters are obtained during the operation of the bot, and the last parameter should NOT be touched.
+4. repeatN: the value is the initial number of bot retries per message.
+5. v: the version of the API used by the server. Methods change with versions over time, so it’s better not to touch this value.
+6. repeatMsg, helpMsg: all fields that end in -Msg serve only to simplify so as not to clog the code.
    - repeatMsg: This is a message that is sent in response to the /repeat command.
    - helpMsg: This is a message that is sent in response to the /help command.
-   - testMsg: This is the message that the user receives in case of failure of the language test. Due to a certain design of queries, not all characters are successfully packed and unpacked, so the user may receive an indistinct answer. The language test checks which language the message is written in, you can only write in Russian, the symbol No. is also Russian. Or only in English, using any other characters.
-8. logLevel: During the execution of the program, on the passage of key and not only moments, logs will be sent to the console. Only 4 levels: DEBUG, INFO, WARNING, ERROR.
+7. logLevel: During the execution of the program, on the passage of key and not only moments, logs will be sent to the console. Only 4 levels: DEBUG, INFO, WARNING, ERROR.
    - DEBUG is the most insignificant.
    - INFO - reports on key points.
    - WARNING - warns of possible errors.
@@ -153,7 +150,7 @@ And after successfully assembling. This way you will do a little check.
 ```git
 $ stack test
 ```
-If problems arise at this or subsequent stages. I left my contacts at the very end.
+If problems arise at this or subsequent stages. I left my contacts it the end README.
 
 ### Step 3 - explanation of work
 The logic of the beginning of correspondence is this: since the bot writes to the user on behalf of the community, the user must allow this community to send messages to him. After the user writes a message to the general community conversation that you created in the first step, the bot will send you an answer to the new correspondence that he created for you. Now you can chat with him using the new correspondence. To change the bot that you want to run, just change its name in MyConfig.json.
