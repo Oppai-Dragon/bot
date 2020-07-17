@@ -1,16 +1,17 @@
-{ "bot":"vk"
+{ "bot":"telegram"
 , "bots":
     [ "vk"
     , "telegram"
     ]
 , "vk":
     { "start_request":
-        { "path":"https://api.vk.com/method/groups.getLongPollServer?"
+        { "path":"https://api.vk.com/method/groups.getLongPollServer"
         , "params":
             [ "group_id"
             , "access_token"
             , "v"
             ]
+        , "got":"response"
         }
     , "ask_request":
         { "path":"<server>"
@@ -21,9 +22,10 @@
             , "mode"
             , "ts"
             ]
+        , "got":"updates"
         }
     , "send_request":
-        { "path":"https://api.vk.com/method/message.send?"
+        { "path":"https://api.vk.com/method/messages.send"
         , "params":
             [ "user_id"
             , "random_id"
@@ -35,54 +37,50 @@
             ]
         }
     , "act":"a_check"
-    , "wait":"25"
-    , "mode":"2"
-    , "random_id":""
-    , "message":""
-    , "attachment":""
+    , "wait":25
+    , "mode":2
+    , "msgField":"message"
     , "access_token":""
     , "keyboard":
         { "keyboard":"{\"one_time\":true,\"buttons\":[[{\"action\":{\"type\":\"text\",\"payload\":\"{\\\"button\\\": \\\"1\\\"}\",\"label\":\"1\"},\"color\":\"primary\"},{\"action\":{\"type\":\"text\",\"payload\":\"{\\\"button\\\": \\\"1\\\"}\",\"label\":\"2\"},\"color\":\"primary\"},{\"action\":{\"type\":\"text\",\"payload\":\"{\\\"button\\\": \\\"1\\\"}\",\"label\":\"3\"},\"color\":\"primary\"},{\"action\":{\"type\":\"text\",\"payload\":\"{\\\"button\\\": \\\"1\\\"}\",\"label\":\"4\"},\"color\":\"primary\"},{\"action\":{\"type\":\"text\",\"payload\":\"{\\\"button\\\": \\\"1\\\"}\",\"label\":\"5\"},\"color\":\"primary\"}]]}"
         }
-    , "peer_id":""
-    , "group_id":""
+    , "peer_id":0
+    , "group_id":0
     , "v":"5.103"
     }
 , "telegram":
     { "start_request":
-        { "path":"https://api.telegram.org/bot<access_token>/getUpdates?"
+        { "path":"https://api.telegram.org/bot<access_token>/getUpdates"
         , "params":
             [ "timeout"
             ]
+        , "got":"result"
         }
     , "ask_request":
-        { "path":"https://api.telegram.org/bot<access_token>/getUpdates?"
+        { "path":"https://api.telegram.org/bot<access_token>/getUpdates"
         , "params":
             [ "timeout"
             , "offset"
             ]
+        , "got":"result"
         }
     , "send_request":
-        { "path":"https://api.telegram.org/bot<access_token>/sendMessage?"
+        { "path":"https://api.telegram.org/bot<access_token>/sendMessage"
         , "params":
             [ "chat_id"
             , "text"
             ]
         }
-    , "timeout":"30"
+    , "timeout":30
     , "access_token":""
     , "keyboard":
         { "reply_markup":"{\"keyboard\":[[{\"text\":\"1\"},{\"text\":\"2\"},{\"text\":\"3\"},{\"text\":\"4\"},{\"text\":\"5\"}]],\"resize_keyboard\":true,\"one_time_keyboard\":true}"
         }
-    , "offset":""
-    , "chat_id":""
-    , "isSendMessage":"True"
-    , "text":""
+    , "isSendMsg":true
+    , "msgField":"text"
     }
-, "repeatN":"1"
-, "lastMsg":""
+, "repeatN":1
 , "repeatMsg":"At the moment, I repeat what you said times. Press the button with the number, with the desired number of repetitions."
 , "helpMsg":"Hey. I am a simple echo-bot - I write back what they wrote to me. If you want to change how many times I reply to one of your messages, then write /repeat "
-, "testMsg":"Please use one human language: Russian or English. If you write in Russian, please use only Russian letters."
 , "logLevel":"DEBUG"
 }
