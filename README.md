@@ -4,8 +4,6 @@ This is a simple echo bot - it sends back what it received. He works in a telegr
 
 ## Getting Started
 
-A little digression. This bot is made very simple, so you will probably find bugs in its work.
-
 ### Step 1 - config changes
 
 After unpacking the repository, in the folder with the files, change the name of the file OurConfig.json to MyConfig.json. Now open it.
