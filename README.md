@@ -110,7 +110,7 @@ To work VK bot you must have 3 fields correctly filled in: accessT, peerId, soci
      - Now you need to choose what you can do using this token. Select 1 and 2: "Allow the application to control the community" and "Allow access to community messages", so that the bot can send messages to users. Creating a token is very important, as it can be used for hacking. Therefore, you have to confirm its creation, for example, using push notification on the phone.
      - Copy it and paste between double quotes in MyConfig.json, as the value of the accessT field. Remember to activate the LongPoll API and synchronize the version of the API with the "v" field in MyConfig.json. For everything to work correctly, put "API version: 5.103". Since it was everything that was created on it.
      - It is also very important which events are activated - the server will respond to your json request with event information. Since this is an echo bot, activate only "Message received".
-![HelperAccessToken](images\helpWithAccessToken.png)
+![HelperAccessToken](images/helpWithAccessToken.png)
 2. peerId: this is an equally important parameter, the identifier of the conversation.
    - Bots need community permission to send messages. And his conversation.
    - Then create a chat. And enter it by clicking on the icon.
