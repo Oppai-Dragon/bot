@@ -187,13 +187,15 @@ The logic of the beginning of correspondence is this: since the bot writes to th
 
 For telegrams of the bot, after starting the bot with the command below. You just need to write to the bot. To find it, you need to use the name you gave it when you created it.
 
+## Run
+
 You can start the application from git bash with this line.
 ```git
 $ stack exec bot-exe
 ```
 To stop an application launched in this way, first select the git bash window as the active one and press crtl + c.
 If you closed git bash before the application stopped, then it will continue to work until you shut it down, for example, through the task manager.
-Also after the assembly bot-exe.exe appeared, it is located in bot\.stack-work\install\a752600e\bin.
+Also after the assembly bot-exe.exe appeared, it is located in bot\\.stack-work\install\<something>\bin.
 
 ## For followers
 
