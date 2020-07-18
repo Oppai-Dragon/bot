@@ -2,7 +2,7 @@ module Log
     ( Priority (..)
     ) where
 
---I'm just newby. And because of it i just realize this Log like a hslogger
+import Data.Char (toUpper)
 
 data Priority =
     DEBUG       -- Debug messages
@@ -29,7 +29,7 @@ instance Eq Priority where
 instance Ord Priority where
     compare x1 x2 = compare (fromEnum x1) (fromEnum x2)
 instance Read Priority where
-    readsPrec _ input = case input of
+    readsPrec _ input = case map toUpper input of
         "DEBUG" -> [(DEBUG,"")]
         "INFO" -> [(INFO,"")]
         "WARNING" -> [(WARNING,"")]

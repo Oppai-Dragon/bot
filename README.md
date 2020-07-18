@@ -195,7 +195,13 @@ To stop an application launched in this way, first select the git bash window as
 If you closed git bash before the application stopped, then it will continue to work until you shut it down, for example, through the task manager.
 Also after the assembly bot-exe.exe appeared, it is located in bot\.stack-work\install\a752600e\bin.
 
-## Architecture
+## For followers
+
+### Architecture
+
+Basically it is StateT Config IO (). Since the config has to be changed in accordance with each message.
+
+ReaderT appears at the message processing level.
 
 ### Modules
 
@@ -204,7 +210,7 @@ Also after the assembly bot-exe.exe appeared, it is located in bot\.stack-work\i
 * src/Lib.hs - the bot's activity follows the scenario described here.
 * src/Bot/<Bot>.hs - a certain functionality peculiar to this bot is prescribed.
 * src/Helpers.hs - bad name. But here are the functions that update the config using functions from src/Bot/<Bot>.hs.
-* src/Log.hs and src/Log/<>.hs - still working on it.
+* src/Log.hs and src/Log/Methods.hs - minimal logging.
 * src/Tests.hs - a function that collects tests that are written in different modules.
 
 ### Adding new bots
@@ -213,6 +219,7 @@ Let the bot's name be Li. You need to create a folder in src/Bot/Li and the file
 
 ## Packages
 
+* [base](https://hackage.haskell.org/package/base) - >= 4.7 && < 5
 * [random](https://hackage.haskell.org/package/random) - Almost all requests require a random identifier.
 * [aeson](https://hackage.haskell.org/package/aeson) - For unpacking and packaging json, as well as for tests.
 * [bytestring](https://hackage.haskell.org/package/bytestring) - For the correct reading of json from the file and sending requests.

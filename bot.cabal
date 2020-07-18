@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 6d04dbb653683866c7f7a04fc619d6ba435cf92bdf8c328f0a0662283f9eda1b
+-- hash: 79eb87eb0b404b2e3f7b02830a6323717b8bd54fc36dc344e3587e5c98c06cd9
 
 name:           bot
 version:        0.1.0.0
@@ -40,7 +40,6 @@ library
       Lib
       Log
       Log.Methods
-      Log.Msg
       Tests
   other-modules:
       Paths_bot

@@ -45,9 +45,6 @@ setPath path =
     fmap (flip (<>) $ "\\src\\" <> path)
     $ parsePath <*> getCurrentDirectory
 
-setLogConfig :: IO Config
-setLogConfig = set $ setPath "Log\\Log.json"
-
 setConfig :: IO Config
 setConfig = do
     config <- set $ setPath "Config.json"
@@ -56,8 +53,7 @@ setConfig = do
             _                  -> ""
     let botPath = T.unpack $ "Bot\\" <> bot <> "\\" <> bot <> ".json"
     botConfig <- set $ setPath botPath
-    logConfig <- setLogConfig
-    return $ HM.unions [botConfig,config,logConfig]
+    return $ HM.unions [botConfig,config]
 
 iterateList :: (a -> b -> b) -> b -> [a] -> b
 iterateList func ini [x]    = func x ini
