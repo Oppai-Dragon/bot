@@ -1,13 +1,17 @@
 module Bot
-    ( Bot(..)
-    ) where
+  ( Bot(..)
+  ) where
 
-import qualified Data.Char              as C
+import qualified Data.Char as C
 
-data Bot = Vk | Telegram deriving (Show,Eq)
+data Bot
+  = Vk
+  | Telegram
+  deriving (Show, Eq)
+
 instance Read Bot where
-    readsPrec _ input =
-        case map C.toUpper input of
-            "VK" -> [(Vk,"")]
-            "TELEGRAM" -> [(Telegram,"")]
-            _  -> []
+  readsPrec _ input =
+    case map C.toUpper input of
+      "VK" -> [(Vk, "")]
+      "TELEGRAM" -> [(Telegram, "")]
+      _ -> []

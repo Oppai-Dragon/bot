@@ -1,17 +1,15 @@
 module Tests
-    ( runTest
-    ) where
+  ( runTest
+  ) where
 
-import Bot.Vk.Test
 import Bot.Telegram.Test
-import Config.Test
+import Bot.Vk.Test
 import Config.Get.Test
+import Config.Test
 
 import Test.HUnit
 
-runTest = runTestTT
-    $ TestList
-    $ botVkTests
-    <> botTelegramTests
-    <> configTests
-    <> configGetTests
+runTest :: IO Counts
+runTest =
+  runTestTT . TestList $
+  botVkTests <> botTelegramTests <> configTests <> configGetTests

@@ -4,16 +4,16 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 79eb87eb0b404b2e3f7b02830a6323717b8bd54fc36dc344e3587e5c98c06cd9
+-- hash: ebb8acdb49a4f9fa3699f7e5988da5e7b9dfb6554a169c55141c3f008b1feace
 
 name:           bot
 version:        0.1.0.0
 description:    Please see the README on GitHub at <https://github.com/githubuser/bot#readme>
 homepage:       https://github.com/githubuser/bot#readme
 bug-reports:    https://github.com/githubuser/bot/issues
-author:         Author name here
+author:         Misha Dragon
 maintainer:     example@example.com
-copyright:      2020 Author name here
+copyright:      2020 Misha Dragon
 license:        BSD3
 license-file:   LICENSE
 build-type:     Simple
@@ -46,6 +46,7 @@ library
   hs-source-dirs:
       src
   default-extensions: OverloadedStrings
+  ghc-options: -Wall -Werror
   build-depends:
       HUnit
     , aeson
@@ -68,7 +69,7 @@ executable bot-exe
   hs-source-dirs:
       app
   default-extensions: OverloadedStrings
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  ghc-options: -Wall -Werror -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       HUnit
     , aeson
@@ -93,7 +94,7 @@ test-suite bot-test
   hs-source-dirs:
       test
   default-extensions: OverloadedStrings
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  ghc-options: -Wall -Werror -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       HUnit
     , aeson

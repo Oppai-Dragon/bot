@@ -2,9 +2,9 @@ name:                bot
 version:             0.1.0.0
 github:              "githubuser/bot"
 license:             BSD3
-author:              "Author name here"
+author:              "Misha Dragon"
 maintainer:          "example@example.com"
-copyright:           "2020 Author name here"
+copyright:           "2020 Misha Dragon"
 
 extra-source-files:
 - README.md
@@ -32,6 +32,10 @@ dependencies:
 - unordered-containers
 - transformers
 - directory
+
+ghc-options:
+- -Wall
+- -Werror
 
 default-extensions: OverloadedStrings
 

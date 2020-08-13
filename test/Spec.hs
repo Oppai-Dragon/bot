@@ -1,4 +1,6 @@
 import Tests
 
+import Control.Monad (void)
+
 main :: IO ()
-main = runTest >> return ()
+main = void runTest
