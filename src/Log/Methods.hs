@@ -10,7 +10,8 @@ import Log
 
 import Debug.Trace
 
------------------------------------Basic---------------------------------------------------
+-------------------------------------------------------------------------------
+-- * Basic
 logM -- Log a message using the given logger at a given priority
  ::
      String -- Name of the logger to use
@@ -20,7 +21,8 @@ logM -- Log a message using the given logger at a given priority
 logM nameLog priority text =
   traceIO $ "[" <> show priority <> "] " <> nameLog <> text
 
-------------------------------Utility Functions--------------------------------------------
+-------------------------------------------------------------------------------
+-- * Utility Functions
 debugM, infoM, warningM, errorM :: String -> String -> IO ()
 debugM = (`logM` DEBUG)
 

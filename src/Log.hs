@@ -33,7 +33,21 @@ instance Eq Priority where
   (==) _ _ = False
 
 instance Ord Priority where
-  compare x1 x2 = compare (fromEnum x1) (fromEnum x2)
+  compare DEBUG DEBUG = EQ
+  compare INFO INFO = EQ
+  compare WARNING WARNING = EQ
+  compare ERROR ERROR = EQ
+
+  compare DEBUG _ = LT
+
+  compare INFO DEBUG = GT
+  compare INFO _ = LT
+
+  compare WARNING DEBUG = GT
+  compare WARNING INFO = GT
+  compare WARNING _ = LT
+
+  compare ERROR _ = GT
 
 instance Read Priority where
   readsPrec _ input =

@@ -29,7 +29,7 @@ parsePath =
      L.words .
      L.intercalate "" .
      map
-       (\x ->
+       (\ x ->
           if x == "\\"
             then " "
             else x) .

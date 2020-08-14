@@ -75,7 +75,7 @@ getRequestPath obj =
 getRequestParams :: Object -> Fields
 getRequestParams obj =
   case getValue ["params"] obj of
-    Array vector -> map (\(String x) -> x) $ V.toList vector
+    Array vector -> map (\ (String x) -> x) $ V.toList vector
     _ -> []
 
 buildRequest :: Field -> Fields -> Config -> Request
@@ -88,7 +88,7 @@ buildRequest path params conf =
             TE.encodeUtf8 . T.pack . show . valueToInteger $ Number num
           Bool bool -> TE.encodeUtf8 . T.pack . show $ bool
           _ -> ""
-      pairs = map (\x -> (TE.encodeUtf8 x, toBS x)) params
+      pairs = map (\ x -> (TE.encodeUtf8 x, toBS x)) params
       request = (urlEncodedBody pairs initRequest) {method = "POST"}
    in request
 
