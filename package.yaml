@@ -21,17 +21,18 @@ description:         Please see the README on GitHub at <https://github.com/gith
 
 dependencies:
 - base >= 4.7 && < 5
-- random
 - aeson
 - bytestring
+- directory
 - http-conduit
 - http-client
-- text
 - HUnit
-- vector
-- unordered-containers
+- random
+- time
+- text
 - transformers
-- directory
+- unordered-containers
+- vector
 
 ghc-options:
 - -Wall

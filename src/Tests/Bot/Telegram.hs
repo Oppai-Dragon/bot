@@ -1,4 +1,4 @@
-module Bot.Telegram.Test
+module Tests.Bot.Telegram
   ( botTelegramTests
   ) where
 

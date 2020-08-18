@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: ebb8acdb49a4f9fa3699f7e5988da5e7b9dfb6554a169c55141c3f008b1feace
+-- hash: d09074494e7c4cb75f0ce46e8506c94332ef8120d1d406d5281983abf1d3500c
 
 name:           bot
 version:        0.1.0.0
@@ -27,20 +27,26 @@ source-repository head
 
 library
   exposed-modules:
+      Base
       Bot
       Bot.Telegram
-      Bot.Telegram.Test
       Bot.Vk
-      Bot.Vk.Test
       Config
       Config.Get
-      Config.Get.Test
-      Config.Test
+      Config.Set
       Helpers
-      Lib
       Log
-      Log.Methods
+      Log.Console
+      Log.File
+      Log.Handle
+      Log.Level
+      Session
       Tests
+      Tests.Base
+      Tests.Bot.Telegram
+      Tests.Bot.Vk
+      Tests.Config.Get
+      Tests.Config.Set
   other-modules:
       Paths_bot
   hs-source-dirs:
@@ -57,6 +63,7 @@ library
     , http-conduit
     , random
     , text
+    , time
     , transformers
     , unordered-containers
     , vector
@@ -81,6 +88,7 @@ executable bot-exe
     , http-conduit
     , random
     , text
+    , time
     , transformers
     , unordered-containers
     , vector
@@ -106,6 +114,7 @@ test-suite bot-test
     , http-conduit
     , random
     , text
+    , time
     , transformers
     , unordered-containers
     , vector

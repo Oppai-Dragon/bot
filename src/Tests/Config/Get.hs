@@ -1,4 +1,4 @@
-module Config.Get.Test
+module Tests.Config.Get
   ( configGetTests
   ) where
 

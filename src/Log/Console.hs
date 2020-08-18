@@ -1,12 +1,11 @@
-module Log.Methods
-  ( logM
-  , debugM
+module Log.Console
+  ( debugM
   , infoM
   , warningM
   , errorM
   ) where
 
-import Log
+import Log.Level
 
 import Debug.Trace
 

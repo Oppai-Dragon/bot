@@ -1,60 +1,30 @@
-{-# LANGUAGE LambdaCase #-}
-
 module Config
   ( Config
   , parsePath
   , set
-  , setPath
-  , setConfig
   , testConfig
   ) where
 
+import Config.Set
+import Log
+
 import Data.Aeson
 import Data.Aeson.Types (parseMaybe)
-import qualified Data.ByteString.Lazy as BSL
 import qualified Data.HashMap.Strict as HM
-import qualified Data.List as L
 import qualified Data.Text as T
 import qualified Data.Vector as V
 
-import System.Directory (getCurrentDirectory)
+data Handle =
+  Handle
+    { config :: Object
+    , log :: Log.Handle
+    }
 
-type Config = Object
-
-parsePath :: IO (FilePath -> FilePath)
-parsePath =
-  return
-    (L.intercalate "\\" .
-     takeWhile (/= "src") .
-     L.words .
-     L.intercalate "" .
-     map
-       (\ x ->
-          if x == "\\"
-            then " "
-            else x) .
-     L.group)
-
-set :: IO FilePath -> IO Object
-set ioPath =
-  ioPath >>= BSL.readFile >>= pure . decode >>= \case
-    Just hm -> pure hm
-    Nothing -> pure HM.empty
-
-setPath :: FilePath -> IO FilePath
-setPath path =
-  fmap (flip (<>) $ "\\src\\" <> path) $ parsePath <*> getCurrentDirectory
-
-setConfig :: IO Config
-setConfig = do
-  config <- set $ setPath "Config.json"
-  let bot =
-        case parseMaybe (.: "bot") config of
-          Just (String name) -> name
-          _ -> ""
-  let botPath = T.unpack $ "Bot\\" <> bot <> "\\" <> bot <> ".json"
-  botConfig <- set $ setPath botPath
-  return $ HM.unions [botConfig, config]
+new :: IO Handle
+new = do
+  conf <- setConfig
+  log <- Log.new
+  return $ Handle conf log
 
 testConfig :: Object
 testConfig =

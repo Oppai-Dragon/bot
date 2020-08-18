@@ -1,11 +1,11 @@
-module Lib
+module Session
   ( runBot
   ) where
 
 import Config
 import Config.Get
 import Helpers
-import Log.Methods
+import Log.Console
 
 import Data.Aeson (Value(..))
 import qualified Data.HashMap.Strict as HM
@@ -16,13 +16,13 @@ import Control.Monad.Trans.State.Strict
 
 import Network.HTTP.Simple
 
-runBot :: StateT Config IO ()
+runBot :: StateT Config.Handle IO ()
 runBot = do
   config <- get
   let bot = getBot config
   lift $ infoM " " $ show bot <> " bot is selected."
   let request = getStartRequest config
-  lift $ debugM "Lib:27" "Start Request"
+  lift $ debugM "Session:26" "Start Request"
   response <- lift $ httpJSON request
   lift $ debugM " " "Success"
   let json = getResponseBody response
@@ -30,11 +30,11 @@ runBot = do
   modify $ HM.union localConfig
   liveSession
 
-liveSession :: StateT Config IO ()
+liveSession :: StateT Config.Handle IO ()
 liveSession = do
   config <- get
   let request = getAskRequest config
-  lift $ debugM "Lib:39" "Ask Request"
+  lift $ debugM "Session:38" "Ask Request"
   response <- lift $ httpJSON request
   lift $ debugM " " "Success"
   let json = getResponseBody response
@@ -43,11 +43,11 @@ liveSession = do
   updates <- checkUpdates updates'
   if HM.null updates
     then liveSession
-    else lift (debugM "Lib:44" "The message is received.") >>
+    else lift (debugM "Session:44" "The message is received.") >>
          runReaderT updateConfig ((updates, json), bot) >>
          echoMessage
 
-echoMessage :: StateT Config IO ()
+echoMessage :: StateT Config.Handle IO ()
 echoMessage = do
   config <- get
   let repeatN =
@@ -57,7 +57,7 @@ echoMessage = do
   lift $ debugM "Lig:55" $ "Number of repetitions " <> show repeatN <> "."
   sendMessage repeatN
 
-sendMessage :: Integer -> StateT Config IO ()
+sendMessage :: Integer -> StateT Config.Handle IO ()
 sendMessage 0 = liveSession
 sendMessage n = do
   updateRandomId
@@ -67,7 +67,7 @@ sendMessage n = do
         case getValue ["lastMsg"] config of
           String "/repeat" -> addingKeyboard req config
           _ -> req
-  lift $ debugM "Lib:70" "Send Request"
+  lift $ debugM "Session:70" "Send Request"
   _ <- lift $ httpBS $ modifyReq request
   lift $ debugM " " "Success"
   sendMessage (n - 1)

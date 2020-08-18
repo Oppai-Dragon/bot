@@ -1,4 +1,4 @@
-module Bot.Vk.Test
+module Tests.Bot.Vk
   ( botVkTests
   ) where
 

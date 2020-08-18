@@ -17,13 +17,14 @@ module Config.Get
   , getRandom
   ) where
 
+import Base
 import Bot
 import Config
 
-import Data.Aeson (Object, Value(..), (.:), parseJSON)
-import Data.Aeson.Types (parseMaybe)
+import qualified Data.Aeson as A
+import qualified Data.Aeson.Types as AT
 import qualified Data.HashMap.Strict as HM
-import Data.Maybe
+import qualified Data.Maybe as Maybe
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
 import qualified Data.Vector as V
@@ -35,8 +36,6 @@ import Network.HTTP.Client
   , parseRequest_
   , urlEncodedBody
   )
-
-import System.Random (getStdRandom, randomR)
 
 type Field = T.Text
 
@@ -75,7 +74,7 @@ getRequestPath obj =
 getRequestParams :: Object -> Fields
 getRequestParams obj =
   case getValue ["params"] obj of
-    Array vector -> map (\ (String x) -> x) $ V.toList vector
+    Array vector -> map (\(String x) -> x) $ V.toList vector
     _ -> []
 
 buildRequest :: Field -> Fields -> Config -> Request
@@ -88,7 +87,7 @@ buildRequest path params conf =
             TE.encodeUtf8 . T.pack . show . valueToInteger $ Number num
           Bool bool -> TE.encodeUtf8 . T.pack . show $ bool
           _ -> ""
-      pairs = map (\ x -> (TE.encodeUtf8 x, toBS x)) params
+      pairs = map (\x -> (TE.encodeUtf8 x, toBS x)) params
       request = (urlEncodedBody pairs initRequest) {method = "POST"}
    in request
 
@@ -105,7 +104,7 @@ parseRequestPath path conf =
           Just (String text) -> text
           _ -> ""
    in case T.find (== '>') path of
-        Just _  -> beforeParam <> paramValue <> afterParam
+        Just _ -> beforeParam <> paramValue <> afterParam
         Nothing -> path
 
 getUnpackField :: Field -> Config -> Field
@@ -138,14 +137,3 @@ getBot :: Config -> Bot
 getBot conf =
   let (String text) = getValue ["bot"] conf
    in read . T.unpack $ text
-
-getValue :: Fields -> Object -> Value
-getValue [] obj = Object obj
-getValue (field:rest) objOld =
-  case parseMaybe (.: field) objOld of
-    Just (Object objNew) -> getValue rest objNew
-    Just value -> value
-    Nothing -> Null
-
-getRandom :: IO Integer
-getRandom = getStdRandom (randomR (1, 100000000000))
