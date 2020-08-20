@@ -1,12 +1,11 @@
 module Main where
 
-import Config (handle)
-import Session (runBot)
-
-import Control.Monad.Trans.State.Strict (runStateT)
+import Base
+import Config
+import Session
 
 main :: IO ()
 main = do
   handle <- Config.new
-  (a, _) <- runStateT runBot handle
+  (a, _) <- runApp runBot handle
   return a

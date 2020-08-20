@@ -1,44 +1,44 @@
 module Bot.Telegram
-  ( getKeysTelegram
-  , updateTelegram
+  ( getKeys
+  , update
   , updateKeys
-  , getTelegramMsg
+  , getMsg
   ) where
 
-import Bot
+import Base
 import Config
-import Config.Get
 
-import Data.Aeson
+import qualified Data.Aeson as A
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Text as T
 
-import Control.Monad.Trans.Class (lift)
-import Control.Monad.Trans.Reader
-import Control.Monad.Trans.State.Strict
-
 type Message = T.Text
 
-getKeysTelegram :: Object -> ReaderT Bot (StateT Config IO) Object
-getKeysTelegram obj =
+type Updates = A.Object
+
+getKeys :: Updates -> BotApp Updates
+getKeys obj =
   let chatId = getValue ["message", "chat", "id"] obj
    in return $ HM.fromList [("chat_id", chatId)]
 
-updateTelegram :: ReaderT Object (StateT Config IO) Message
-updateTelegram = do
+update :: ObjApp Message
+update = do
   updateKeys
-  getTelegramMsg
+  getMsg
 
-updateKeys :: ReaderT Object (StateT Config IO) ()
+updateKeys :: ObjApp ()
 updateKeys = do
-  updates <- ask
+  updates <- askApp
   let updateId = getValue ["update_id"] updates
   let chatId = getValue ["message", "chat", "id"] updates
   let localConfig = HM.fromList [("offset", updateId), ("chat_id", chatId)]
-  lift . modify $ HM.union localConfig
+  fromApp . modifyConfig $ HM.union localConfig
 
-getTelegramMsg :: ReaderT Object (StateT Config IO) Message
-getTelegramMsg = do
-  updates <- ask
-  let (String msg) = getValue ["message", "text"] updates
+getMsg :: ObjApp Message
+getMsg = do
+  updates <- askApp
+  let msg =
+        case getValue ["message", "text"] updates of
+          A.String x -> x
+          _ -> ""
   return msg

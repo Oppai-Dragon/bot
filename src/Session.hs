@@ -2,72 +2,78 @@ module Session
   ( runBot
   ) where
 
+import Base
 import Config
 import Config.Get
 import Helpers
 import Log.Console
 
-import Data.Aeson (Value(..))
+import qualified Data.Aeson as A
 import qualified Data.HashMap.Strict as HM
 
-import Control.Monad.Trans.Class (lift)
-import Control.Monad.Trans.Reader
-import Control.Monad.Trans.State.Strict
+import qualified Network.HTTP.Simple as HTTPSimple
 
-import Network.HTTP.Simple
-
-runBot :: StateT Config.Handle IO ()
+runBot :: App ()
 runBot = do
-  config <- get
+  (Config.Handle config _) <- getApp
   let bot = getBot config
-  lift $ infoM " " $ show bot <> " bot is selected."
+  fromIO $ infoM " " $ show bot <> " bot is selected."
   let request = getStartRequest config
-  lift $ debugM "Session:26" "Start Request"
-  response <- lift $ httpJSON request
-  lift $ debugM " " "Success"
-  let json = getResponseBody response
-  localConfig <- runReaderT (getKeys json) bot
-  modify $ HM.union localConfig
+  fromIO $ infoM "Session:26" "Start Request"
+  response <- fromIO $ HTTPSimple.httpJSON request
+  fromIO $ infoM " " "Success"
+  let json = HTTPSimple.getResponseBody response
+  localConfig <- runRApp (getKeys json) bot
+  modifyConfig $ HM.union localConfig
   liveSession
 
-liveSession :: StateT Config.Handle IO ()
+liveSession :: App ()
 liveSession = do
-  config <- get
-  let request = getAskRequest config
-  lift $ debugM "Session:38" "Ask Request"
-  response <- lift $ httpJSON request
-  lift $ debugM " " "Success"
-  let json = getResponseBody response
+  (Config.Handle config _) <- getApp
+  json <- askRequest
   let bot = getBot config
   updates' <- unpackUpdates json
   updates <- checkUpdates updates'
   if HM.null updates
     then liveSession
-    else lift (debugM "Session:44" "The message is received.") >>
-         runReaderT updateConfig ((updates, json), bot) >>
+    else fromIO (debugM "Session:44" "The message is received.") >>
+         runRApp (updateConfig updates json) bot >>
          echoMessage
 
-echoMessage :: StateT Config.Handle IO ()
+echoMessage :: App ()
 echoMessage = do
-  config <- get
+  (Config.Handle config _) <- getApp
   let repeatN =
         case getValue ["repeatN"] config of
-          Number n -> valueToInteger $ Number n
+          A.Number n -> valueToInteger $ A.Number n
           _ -> 1
-  lift $ debugM "Lig:55" $ "Number of repetitions " <> show repeatN <> "."
+  fromIO $ debugM "Lig:51" $ "Number of repetitions " <> show repeatN <> "."
   sendMessage repeatN
 
-sendMessage :: Integer -> StateT Config.Handle IO ()
+sendMessage :: Integer -> App ()
 sendMessage 0 = liveSession
 sendMessage n = do
   updateRandomId
-  config <- get
-  let request = getSendRequest config
-  let modifyReq req =
-        case getValue ["lastMsg"] config of
-          String "/repeat" -> addingKeyboard req config
-          _ -> req
-  lift $ debugM "Session:70" "Send Request"
-  _ <- lift $ httpBS $ modifyReq request
-  lift $ debugM " " "Success"
+  (Config.Handle config _) <- getApp
+  let reqDefault = getSendRequest config
+  request <- runSApp modifyRequest reqDefault
+  fromIO $ print request
+  fromIO $ debugM "Session:61" "Send Request"
+  _ <- fromIO $ HTTPSimple.httpBS request
+  fromIO $ debugM " " "Success"
   sendMessage (n - 1)
+
+modifyRequest :: ReqApp HTTPSimple.Request
+modifyRequest = do
+  addKeyboard
+  getApp
+
+askRequest :: A.FromJSON a => App a
+askRequest = do
+  (Config.Handle config _) <- getApp
+  let request = getAskRequest config
+  fromIO $ debugM "Session:74 " "Ask Request"
+  response <- fromIO $ HTTPSimple.httpJSON request
+  fromIO $ debugM " " "Success"
+  json <- HTTPSimple.getResponseBody response
+  return json

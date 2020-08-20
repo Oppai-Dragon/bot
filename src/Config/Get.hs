@@ -13,8 +13,6 @@ module Config.Get
   , getKeyboard
   , getRepeatMsg
   , getBot
-  , getValue
-  , getRandom
   ) where
 
 import Base
@@ -29,26 +27,20 @@ import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
 import qualified Data.Vector as V
 
-import Network.HTTP.Client
-  ( Request
-  , defaultRequest
-  , method
-  , parseRequest_
-  , urlEncodedBody
-  )
+import qualified Network.HTTP.Client as HTTPClient
 
 type Field = T.Text
 
 type Fields = [Field]
 
-getStartRequest, getSendRequest, getAskRequest :: Config -> Request
+getStartRequest, getSendRequest, getAskRequest :: Config -> HTTPClient.Request
 getStartRequest = getRequest "start_request"
 
 getAskRequest = getRequest "ask_request"
 
 getSendRequest = getRequest "send_request"
 
-getRequest :: Field -> Config -> Request
+getRequest :: Field -> Config -> HTTPClient.Request
 getRequest nameReq conf =
   let requestObj = getRequestObj nameReq conf
       requestPath = getRequestPath requestObj
@@ -57,42 +49,42 @@ getRequest nameReq conf =
         all not [HM.null requestObj, T.null requestPath, null requestParams]
    in if isRequestCollected
         then buildRequest requestPath requestParams conf
-        else defaultRequest
+        else HTTPClient.defaultRequest
 
-getRequestObj :: Field -> Config -> Object
+getRequestObj :: Field -> Config -> A.Object
 getRequestObj field conf =
   case getValue [field] conf of
-    Object obj -> obj
+    A.Object obj -> obj
     _ -> HM.empty
 
-getRequestPath :: Object -> Field
+getRequestPath :: A.Object -> Field
 getRequestPath obj =
   case getValue ["path"] obj of
-    String path -> path
+    A.String path -> path
     _ -> ""
 
-getRequestParams :: Object -> Fields
+getRequestParams :: A.Object -> Fields
 getRequestParams obj =
   case getValue ["params"] obj of
-    Array vector -> map (\(String x) -> x) $ V.toList vector
+    A.Array vector -> map (\(A.String x) -> x) $ V.toList vector
     _ -> []
 
-buildRequest :: Field -> Fields -> Config -> Request
+buildRequest :: Field -> Fields -> Config -> HTTPClient.Request
 buildRequest path params conf =
-  let initRequest = parseRequest_ $ T.unpack $ parseRequestPath path conf
+  let initRequest = HTTPClient.parseRequest_ . T.unpack $ parseRequestPath path conf
       toBS field =
         case getValue [field] conf of
-          String text -> TE.encodeUtf8 text
-          Number num ->
-            TE.encodeUtf8 . T.pack . show . valueToInteger $ Number num
-          Bool bool -> TE.encodeUtf8 . T.pack . show $ bool
+          A.String text -> TE.encodeUtf8 text
+          A.Number num ->
+            TE.encodeUtf8 . T.pack . show . valueToInteger $ A.Number num
+          A.Bool bool -> TE.encodeUtf8 . T.pack . show $ bool
           _ -> ""
       pairs = map (\x -> (TE.encodeUtf8 x, toBS x)) params
-      request = (urlEncodedBody pairs initRequest) {method = "POST"}
+      request = (HTTPClient.urlEncodedBody pairs initRequest) {HTTPClient.method = "POST"}
    in request
 
-valueToInteger :: Value -> Integer
-valueToInteger = fromMaybe 0 . parseMaybe parseJSON
+valueToInteger :: A.Value -> Integer
+valueToInteger = Maybe.fromMaybe 0 . AT.parseMaybe A.parseJSON
 
 parseRequestPath :: Field -> Config -> Field
 parseRequestPath path conf =
@@ -100,8 +92,8 @@ parseRequestPath path conf =
       param = T.tail . T.takeWhile (/= '>') . T.dropWhile (/= '<') $ path
       afterParam = T.tail $ T.dropWhile (/= '>') path
       paramValue =
-        case parseMaybe (.: param) conf of
-          Just (String text) -> text
+        case getValue [param] conf of
+          A.String text -> text
           _ -> ""
    in case T.find (== '>') path of
         Just _ -> beforeParam <> paramValue <> afterParam
@@ -110,21 +102,21 @@ parseRequestPath path conf =
 getUnpackField :: Field -> Config -> Field
 getUnpackField field conf =
   case getValue [field, "got"] conf of
-    (String text) -> text
+    A.String text -> text
     _ -> ""
 
-getKeyboard :: Config -> [(T.Text, Value)]
+getKeyboard :: Config -> [(T.Text, A.Value)]
 getKeyboard conf =
-  case parseMaybe (.: "keyboard") conf of
-    Just (Object obj) -> HM.toList obj
+  case getValue ["keyboard"] conf of
+    A.Object obj -> HM.toList obj
     _ -> []
 
-getRepeatMsg :: Config -> Value
+getRepeatMsg :: Config -> A.Value
 getRepeatMsg conf =
-  let Number repeatN = getValue ["repeatN"] conf
+  let A.Number repeatN = getValue ["repeatN"] conf
       repeatNText = T.pack . takeWhile (/= '.') $ show repeatN
-      String repeatMsg = getValue ["repeatMsg"] conf
-   in String $
+      A.String repeatMsg = getValue ["repeatMsg"] conf
+   in A.String $
       T.unwords $
       map
         (\x ->
@@ -135,5 +127,5 @@ getRepeatMsg conf =
 
 getBot :: Config -> Bot
 getBot conf =
-  let (String text) = getValue ["bot"] conf
+  let (A.String text) = getValue ["bot"] conf
    in read . T.unpack $ text

@@ -2,18 +2,26 @@ module Tests.Base
   ( baseTests
   ) where
 
+import Base
 import Config
 
-import System.Directory (getCurrentDirectory)
-import System.IO.Unsafe (unsafePerformIO)
+import qualified Data.Aeson as A
 
 import Test.HUnit
 
-configTests :: [Test]
-configTests = [TestLabel "parsePathTest" parsePathTest]
+baseTests :: [Test]
+baseTests =
+  [ TestLabel "parsePathTest" parsePathTest
+  , TestLabel "getValueTest" getValueTest
+  ]
 
-parsePathTest :: Test
+parsePathTest, getValueTest :: Test
 parsePathTest =
   TestCase $
-  parsePath "E:\\users\\get\\src" >>=
-  assertEqual "for (parsePath \"E:\\users\\get\\src\")" "E:\\users\\get"
+  assertEqual "for (parsePath \"E:\\users\\get\\src\")" "E:\\users\\get" $
+  parsePath "E:\\users\\get\\src"
+
+getValueTest =
+  TestCase $
+  assertEqual "for (getValue [\"repeatN\"] testConfig)" (A.Number 1) $
+  getValue ["repeatN"] testConfig

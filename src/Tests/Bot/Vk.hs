@@ -2,114 +2,118 @@ module Tests.Bot.Vk
   ( botVkTests
   ) where
 
-import Bot
+import Base
 import Bot.Vk
 import Config
+import Log
 
-import Data.Aeson
+import qualified Data.Aeson as A
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Vector as V
-
-import Control.Monad.Trans.Reader
-import Control.Monad.Trans.State.Strict
-
-import System.IO.Unsafe (unsafePerformIO)
 
 import Test.HUnit
 
 botVkTests :: [Test]
 botVkTests =
-  [ TestLabel "getKeysVkTest" getKeysVkTest
-  , TestLabel "updateVkTest" updateVkTest
+  [ TestLabel "updateTest" updateTest
   , TestLabel "getAttachmentTest" getAttachmentTest
-  , TestLabel "getVkMsgTest" getVkMsgTest
+  , TestLabel "getMsgTest" getMsgTest
   ]
 
-getKeysVkTest, updateVkTest, getAttachmentTest, getVkMsgTest :: Test
-getKeysVkTest =
+updateTest, getAttachmentTest, getMsgTest :: Test
+updateTest =
   TestCase $
-  assertEqual "for (getKeysVk testUpdatesObj)" testUpdatesObj $
-  fst $
-  unsafePerformIO $
-  runStateT (runReaderT (getKeysVk testUpdatesObj) Vk) testConfig
-
-updateVkTest =
-  TestCase $
-  assertEqual "for (updateVk)" "" $
-  fst $
-  unsafePerformIO $
-  runStateT (runReaderT updateVk (testUpdatesObj, testResponseObj)) testConfig
+  runApp (runRApp (update testResponseObj) testUpdatesObj) testHandle >>=
+  assertEqual
+    "for (runStateT (runReaderT (update testResponseObj) testUpdatesObj) testHandle"
+    ("privet", testUpdatedHandle)
 
 getAttachmentTest =
   TestCase $
   assertEqual "for (getAttachment [attachmentsObj])" ",audio174435367_456241022" $
   getAttachment [attachmentsObj]
 
-getVkMsgTest =
+getMsgTest =
   TestCase $
-  assertEqual "for (getVkMsg)" "" . fst . unsafePerformIO $
-  runStateT (runReaderT getVkMsg testUpdatesObj) testConfig
+  runApp (runRApp getMsg testUpdatesObj) testHandle >>= \(a, _) ->
+    assertEqual
+      "for (runApp (runRApp getMsg testUpdatesObj) testHandle >>= \\(a,_) -> return a)"
+      "privet"
+      a
 
-testResponseObj, testUpdatesObj, attachmentsObj :: Object
+testUpdatedHandle :: Config.Handle
+testUpdatedHandle = Config.Handle testUpdatedConfig (Log.Handle "" Nothing)
+
+testResponseObj, testUpdatedConfig, testUpdated, testUpdatesObj, attachmentsObj ::
+     A.Object
 testResponseObj =
-  HM.fromList [("ts", Number 1), ("updates", Object testUpdatesObj)]
+  HM.fromList [("updates", A.Object testUpdatesObj), ("ts", A.Number 1)]
+
+testUpdatedConfig = HM.union testUpdated testConfig
+
+testUpdated =
+  HM.fromList
+    [ ("ts", A.Number 1)
+    , ("user_id", A.Number 1.74435367e8)
+    , ("attachment", A.String "audio174435367_456241022")
+    ]
 
 testUpdatesObj =
   HM.fromList
     [ ( "object"
-      , Object
+      , A.Object
           (HM.fromList
              [ ( "message"
-               , Object
+               , A.Object
                    (HM.fromList
                       [ ( "attachments"
-                        , (Array . V.fromList) [Object attachmentsObj])
-                      , ("text", String "")
-                      , ("peer_id", Number 1.74435367e8)
-                      , ("conversation_message_id", Number 1643.0)
-                      , ("random_id", Number 0.0)
-                      , ("date", Number 1.594990603e9)
-                      , ("from_id", Number 1.74435367e8)
-                      , ("is_hidden", Bool False)
-                      , ("fwd_messages", Array V.empty)
-                      , ("id", Number 1722.0)
-                      , ("important", Bool False)
-                      , ("out", Number 0.0)
+                        , (A.Array . V.fromList) [A.Object attachmentsObj])
+                      , ("text", A.String "privet")
+                      , ("peer_id", A.Number 1.74435367e8)
+                      , ("conversation_message_id", A.Number 1643.0)
+                      , ("random_id", A.Number 0.0)
+                      , ("date", A.Number 1.594990603e9)
+                      , ("from_id", A.Number 1.74435367e8)
+                      , ("is_hidden", A.Bool False)
+                      , ("fwd_messages", A.Array V.empty)
+                      , ("id", A.Number 1722.0)
+                      , ("important", A.Bool False)
+                      , ("out", A.Number 0.0)
                       ]))
              ]))
-    , ("group_id", Number 1.52071194e8)
-    , ("type", String "message_new")
-    , ("event_id", String "81823d9a3a91026138883249450d9f281bbe2ad3")
+    , ("group_id", A.Number 1.52071194e8)
+    , ("type", A.String "message_new")
+    , ("event_id", A.String "81823d9a3a91026138883249450d9f281bbe2ad3")
     ]
 
 attachmentsObj =
   HM.fromList
-    [ ("type", String "audio")
+    [ ("type", A.String "audio")
     , ( "audio"
-      , Object
+      , A.Object
           (HM.fromList
              [ ( "url"
-               , String
+               , A.String
                    "https://cs9-21v4.vkuseraudio.net/p5/899903aa90615c.mp3?extra=wY1ebEmN2-sMSC_w4FX3IEIQVUdj7fG0hDR83Ae8wv1C45z8RB5rIV2PEuYRNf_Ek0E6iIg6pCjmfuek27On69bZJLeJa6u_2jEFtM9V4ne-v8bQcK9pISBWkgnM9Kh4UyLDAq21H59n9yKqiiUGRdY&long_chunk=1")
              , ( "main_artists"
-               , (Array . V.fromList)
-                   [ Object
+               , (A.Array . V.fromList)
+                   [ A.Object
                        (HM.fromList
-                          [ ("domain", String "8333364158186615256")
-                          , ("name", String "Stroke 9")
-                          , ("id", String "8333364158186615256")
+                          [ ("domain", A.String "8333364158186615256")
+                          , ("name", A.String "Stroke 9")
+                          , ("id", A.String "8333364158186615256")
                           ])
                    ])
-             , ("date", Number 1.592947395e9)
-             , ("stories_allowed", Bool False)
-             , ("id", Number 4.56241022e8)
-             , ("track_code", String "96954ffdNHF4tSqDZAh3OYQXuYDuWqR0fR4")
-             , ("short_videos_allowed", Bool False)
-             , ("title", String "Kick Some Ass")
-             , ("is_explicit", Bool False)
-             , ("owner_id", Number 1.74435367e8)
-             , ("duration", Number 240.0)
-             , ("artist", String "Stroke 9")
-             , ("is_focus_track", Bool False)
+             , ("date", A.Number 1.592947395e9)
+             , ("stories_allowed", A.Bool False)
+             , ("id", A.Number 4.56241022e8)
+             , ("track_code", A.String "96954ffdNHF4tSqDZAh3OYQXuYDuWqR0fR4")
+             , ("short_videos_allowed", A.Bool False)
+             , ("title", A.String "Kick Some Ass")
+             , ("is_explicit", A.Bool False)
+             , ("owner_id", A.Number 1.74435367e8)
+             , ("duration", A.Number 240.0)
+             , ("artist", A.String "Stroke 9")
+             , ("is_focus_track", A.Bool False)
              ]))
     ]

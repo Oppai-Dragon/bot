@@ -23,10 +23,9 @@ configGetTests =
   , TestLabel "getKeyboardTest" getKeyboardTest
   , TestLabel "getRepeatMsgTest" getRepeatMsgTest
   , TestLabel "getBotTest" getBotTest
-  , TestLabel "getValueTest" getValueTest
   ]
 
-getRequestObjTest, getRequestPathTest, getRequestParamsTest, valueToIntegerTest, parseRequestPathTest, getUnpackFieldTest, getKeyboardTest, getRepeatMsgTest, getBotTest, getValueTest ::
+getRequestObjTest, getRequestPathTest, getRequestParamsTest, valueToIntegerTest, parseRequestPathTest, getUnpackFieldTest, getKeyboardTest, getRepeatMsgTest, getBotTest ::
      Test
 getRequestObjTest =
   TestCase $
@@ -84,11 +83,6 @@ getRepeatMsgTest =
 
 getBotTest =
   TestCase $ assertEqual "for (getBot testConfig)" Vk $ getBot testConfig
-
-getValueTest =
-  TestCase $
-  assertEqual "for (getValue [\"repeatN\"] testConfig)" (Number 1) $
-  getValue ["repeatN"] testConfig
 
 testStartRequestConfig :: Object
 testStartRequestConfig =

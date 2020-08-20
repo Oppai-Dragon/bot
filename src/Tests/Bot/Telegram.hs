@@ -2,76 +2,82 @@ module Tests.Bot.Telegram
   ( botTelegramTests
   ) where
 
+import Base
 import Bot
 import Bot.Telegram
 import Config
+import Log
 
-import Data.Aeson
+import qualified Data.Aeson as A
 import qualified Data.HashMap.Strict as HM
-
-import Control.Monad.Trans.Reader
-import Control.Monad.Trans.State.Strict
-
-import System.IO.Unsafe (unsafePerformIO)
 
 import Test.HUnit
 
 botTelegramTests :: [Test]
 botTelegramTests =
-  [ TestLabel "getKeysTelegramTest" getKeysTelegramTest
-  , TestLabel "updateTelegramTest" updateTelegramTest
-  , TestLabel "getTelegramMsgTest" getTelegramMsgTest
+  [ TestLabel "getKeysTest" getKeysTest
+  , TestLabel "updateTest" updateTest
+  , TestLabel "getMsgTest" getMsgTest
   ]
 
-getKeysTelegramTest, updateTelegramTest, getTelegramMsgTest :: Test
+getKeysTest, updateTest, getMsgTest :: Test
+getKeysTest =
+  TestCase $
+  runApp (runRApp (getKeys testUpdatesObj) Telegram) testHandle >>= \(a, _) ->
+    assertEqual
+      "for (runApp (runRApp (getKeys testUpdatesObj) Telegram) testHandle >>= \\(a, _) -> return a)"
+      (HM.singleton "chat_id" (A.Number 1))
+      a
 
-getKeysTelegramTest =
-  TestCase .
+updateTest =
+  TestCase $
+  runApp (runRApp update testUpdatesObj) testHandle >>=
   assertEqual
-    "for (getKeysTelegram testUpdatesObj)"
-    (HM.singleton "chat_id" (Number 1)) . fst . unsafePerformIO $
-  runStateT (runReaderT (getKeysTelegram testUpdatesObj) Telegram) testConfig
+    "for (runApp (runRApp update testUpdatesObj) testHandle)"
+    ("suka", testUpdatedHandle)
 
-updateTelegramTest =
+getMsgTest =
   TestCase $
-  assertEqual "for (updateTelegram )" "suka" $
-  fst $
-  unsafePerformIO $
-  runStateT (runReaderT updateTelegram testUpdatesObj) testConfig
+  runApp (runRApp getMsg testUpdatesObj) testHandle >>= \(a, _) ->
+    assertEqual
+      "for (runApp (runRApp getMsg testUpdatesObj) testHandle >>= \\(a,_) -> return a)"
+      "suka"
+      a
 
-getTelegramMsgTest =
-  TestCase $
-  assertEqual "for (getTelegramMsg )" "suka" $
-  fst $
-  unsafePerformIO $
-  runStateT (runReaderT getTelegramMsg testUpdatesObj) testConfig
+testUpdatedHandle :: Config.Handle
+testUpdatedHandle = Config.Handle testUpdatedConfig (Log.Handle "" Nothing)
 
-testUpdatesObj :: Object
+testUpdatedConfig, testUpdated, testUpdatesObj :: A.Object
+testUpdatedConfig = HM.union testUpdated testConfig
+
+testUpdated =
+  HM.fromList [("offset", A.Number 6.26040329e8), ("chat_id", A.Number 1)]
+
 testUpdatesObj =
   HM.fromList
-    [ ("update_id", Number 6.26040329e8)
+    [ ("update_id", A.Number 6.26040329e8)
     , ( "message"
-      , Object
+      , A.Object
           (HM.fromList
-             [ ("text", String "suka")
+             [ ("text", A.String "suka")
              , ( "from"
-               , Object
+               , A.Object
                    (HM.fromList
-                      [ ("first_name", String "Misha")
-                      , ("is_bot", Bool False)
-                      , ("last_name", String "Dragon")
-                      , ("id", Number 1.09778397e9)
-                      , ("language_code", String "ru")
+                      [ ("first_name", A.String "Misha")
+                      , ("is_bot", A.Bool False)
+                      , ("last_name", A.String "Dragon")
+                      , ("id", A.Number 1.09778397e9)
+                      , ("language_code", A.String "ru")
                       ]))
              , ( "chat"
-               , Object
+               , A.Object
                    (HM.fromList
-                      [ ("first_name", String "Misha")
-                      , ("last_name", String "Dragon")
-                      , ("id", Number 1)
-                      , ("type", String "private")
+                      [ ("first_name", A.String "Misha")
+                      , ("last_name", A.String "Dragon")
+                      , ("id", A.Number 1)
+                      , ("type", A.String "private")
                       ]))
-             , ("message_id", Number 464.0)
-             , ("date", Number 1.594995148e9)
+             , ("message_id", A.Number 464.0)
+             , ("date", A.Number 1.594995148e9)
              ]))
     ]

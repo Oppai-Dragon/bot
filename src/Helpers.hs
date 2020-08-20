@@ -1,66 +1,66 @@
 module Helpers
-  ( getKeys
+  ( Helpers.getKeys
   , getLastObj
   , checkUpdates
   , updateConfig
   , updateRepeatN
   , msgHandler
   , updateRandomId
-  , addingKeyboard
+  , addKeyboard
   , unpackUpdates
   ) where
 
+import Base
 import Bot
-import Bot.Telegram
-import Bot.Vk
+import Bot.Telegram as Telegram
+import Bot.Vk as Vk
 import Config
 import Config.Get
 
-import Data.Aeson
-import Data.Aeson.Types (parseMaybe)
+import qualified Data.Aeson as A
+import qualified Data.Aeson.Types as AT
 import qualified Data.Char as C
+import qualified Data.Function as Func
 
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
 
-import Control.Monad.Trans.Class (lift)
-import Control.Monad.Trans.Reader
-import Control.Monad.Trans.State.Strict
-
-import Network.HTTP.Client (Request)
-import Network.HTTP.Simple (addToRequestQueryString)
+import qualified Network.HTTP.Simple as HTTPSimple
 
 type Message = T.Text
 
-getKeys :: Value -> ReaderT Bot (StateT Config IO) Object
-getKeys (Object obj) = do
-  bot <- ask
-  config <- lift get
+type Updates = A.Object
+
+getKeys :: A.Value -> BotApp Updates
+getKeys (A.Object obj) = do
+  bot <- askApp
+  (Config.Handle config _) <- fromApp getApp
   let field = getUnpackField "start_request" config
   let updateObj =
-        case parseMaybe (.: field) obj of
-          Just (Array vector) -> getLastObj (Array vector)
-          Just (Object responseObj) -> responseObj
+        case AT.parseMaybe (A..: field) obj of
+          Just (A.Array vector) -> getLastObj (A.Array vector)
+          Just (A.Object responseObj) -> responseObj
           _ -> HM.empty
-  case bot of
-    Vk -> getKeysVk updateObj
-    Telegram -> getKeysTelegram updateObj
+  updateObj Func.&
+    case bot of
+      Bot.Vk -> Vk.getKeys
+      Bot.Telegram -> Telegram.getKeys
 getKeys _ = pure HM.empty
 
-getLastObj :: Value -> Object
+getLastObj :: A.Value -> Updates
 getLastObj value =
   let arrayObj = HM.singleton "array" value
-   in case parseMaybe (.: "array") arrayObj :: Maybe [Object] of
+   in case AT.parseMaybe (A..: "array") arrayObj :: Maybe [Updates] of
         Just objArr ->
           if null objArr
             then HM.empty
             else last objArr
         Nothing -> HM.empty
 
-checkUpdates :: Object -> StateT Config IO Object
+checkUpdates :: Updates -> App Updates
 checkUpdates updates = do
-  config <- get
+  (Config.Handle config _) <- getApp
   let updateIdOld = getValue ["offset"] config
   case HM.lookup "update_id" updates of
     Just value ->
@@ -69,20 +69,22 @@ checkUpdates updates = do
         else return updates
     Nothing -> return updates
 
-updateConfig :: ReaderT ((Object, Value), Bot) (StateT Config IO) ()
-updateConfig = do
-  ((updates, Object response), bot) <- ask
+updateConfig :: Updates -> A.Value -> BotApp ()
+updateConfig updates (A.Object response) = do
+  bot <- askApp
   msg <-
-    lift $
+    fromApp $
+    updates Func.&
     case bot of
-      Vk -> runReaderT updateVk (updates, response)
-      Telegram -> runReaderT updateTelegram updates
-  lift $ updateRepeatN msg
-  lift $ msgHandler msg
+      Bot.Vk -> runRApp (Vk.update response)
+      Bot.Telegram -> runRApp Telegram.update
+  fromApp $ updateRepeatN msg
+  fromApp $ msgHandler msg
+updateConfig _ _ = return ()
 
-updateRepeatN :: Message -> StateT Config IO ()
+updateRepeatN :: Message -> App ()
 updateRepeatN msg = do
-  config <- get
+  (Config.Handle config _) <- getApp
   let lastMsg = getValue ["lastMsg"] config
   let msgStr = T.unpack msg
   let greatThenNull n =
@@ -92,50 +94,55 @@ updateRepeatN msg = do
   let oldRepeatN = getValue ["repeatN"] config
   let repeatN =
         case lastMsg of
-          String "/repeat" ->
-            Number $
+          A.String "/repeat" ->
+            A.Number $
             if all C.isDigit msgStr
               then greatThenNull $ read msgStr
               else 1
           _ -> oldRepeatN
-  modify $ HM.insert "repeatN" repeatN
+  modifyConfig $ HM.insert "repeatN" repeatN
 
-msgHandler :: Message -> StateT Config IO ()
+msgHandler :: Message -> App ()
 msgHandler msg = do
-  config <- get
-  let (String msgField) = getValue ["msgField"] config
+  (Config.Handle config _) <- getApp
+  let msgField =
+        case getValue ["msgField"] config of
+          A.String x -> x
+          _ -> ""
   let msgObj =
         HM.singleton msgField $
         case msg of
           "/help" -> getValue ["helpMsg"] config
           "/repeat" -> getRepeatMsg config
-          _ -> String msg
-  let localConfig = HM.singleton "lastMsg" (String msg) `HM.union` msgObj
-  modify $ HM.union localConfig
+          _ -> A.String msg
+  let localConfig = HM.singleton "lastMsg" (A.String msg) `HM.union` msgObj
+  modifyConfig $ HM.union localConfig
 
-updateRandomId :: StateT Config IO ()
+updateRandomId :: App ()
 updateRandomId = do
-  randomN <- lift getRandom
-  let randomId = Number . read $ show randomN
-  modify $ HM.insert "random_id" randomId
+  randomN <- fromIO getRandomInteger
+  let randomId = A.Number . read $ show randomN
+  modifyConfig $ HM.insert "random_id" randomId
 
-addingKeyboard :: Request -> Config -> Request
-addingKeyboard req conf =
-  case getKeyboard conf of
-    (keybField, String keybValue):_ ->
-      addToRequestQueryString
+addKeyboard :: ReqApp ()
+addKeyboard = do
+  req <- getApp
+  (Config.Handle config _) <- fromApp getApp
+  putApp $ case getKeyboard config of
+    (keybField, A.String keybValue):_ ->
+      HTTPSimple.addToRequestQueryString
         [(TE.encodeUtf8 keybField, Just $ TE.encodeUtf8 keybValue)]
         req
     _ -> req
 
-unpackUpdates :: Value -> StateT Config IO Object
-unpackUpdates (Object obj) = do
-  config <- get
+unpackUpdates :: A.Value -> App Updates
+unpackUpdates (A.Object obj) = do
+  (Config.Handle config _) <- getApp
   let field = getUnpackField "ask_request" config
   let updateObj =
-        case parseMaybe (.: field) obj of
-          Just (Array vector) -> getLastObj (Array vector)
-          Just (Object responseObj) -> responseObj
+        case AT.parseMaybe (A..: field) obj of
+          Just (A.Array vector) -> getLastObj (A.Array vector)
+          Just (A.Object responseObj) -> responseObj
           _ -> HM.empty
   return updateObj
 unpackUpdates _ = return HM.empty

@@ -14,7 +14,7 @@ import Debug.Trace
 logM -- Log a message using the given logger at a given priority
  ::
      String -- Name of the logger to use
-  -> Priority -- Priority of this message
+  -> Level -- Priority of this message
   -> String -- The log text itself
   -> IO ()
 logM nameLog priority text =

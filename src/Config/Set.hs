@@ -7,25 +7,26 @@ module Config.Set
 
 import Base
 
-import Data.Aeson
+import qualified Data.Aeson as A
+import qualified Data.Aeson.Types as AT
 import qualified Data.ByteString.Lazy as BSL
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Text as T
 
-set :: FilePath -> IO Object
+set :: FilePath -> IO A.Object
 set path =
-  BSL.readFile path >>= pure . decode >>= \case
+  BSL.readFile path >>= pure . A.decode >>= \case
     Just hm -> pure hm
     Nothing -> pure HM.empty
 
-setConfig :: IO Object
+setConfig :: IO A.Object
 setConfig = do
   repDir <- getRepDir
   config <- set $ repDir <> "\\src\\Config.json"
   let bot =
-        case parseMaybe (.: "bot") config of
-          Just (String name) -> name
+        case AT.parseMaybe (A..: "bot") config of
+          Just (A.String name) -> name
           _ -> ""
-  let botPath = T.unpack $ "Bot\\" <> bot <> "\\" <> bot <> ".json"
+  let botPath = T.unpack $ "\\src\\Bot\\" <> bot <> "\\" <> bot <> ".json"
   botConfig <- set $ repDir <> botPath
   return $ HM.unions [botConfig, config]
