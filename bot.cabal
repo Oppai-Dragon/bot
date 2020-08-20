@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: e48b5205d6ded69345047454f0826e4240e8d5aba8aea1e009dc541e496be4ba
+-- hash: 25190116c3ad1f5c001ff6a41624d5a7516ef9c995f3fabad090539ef4fb3cd3
 
 name:           bot
 version:        0.1.0.0
@@ -34,11 +34,13 @@ library
       Config
       Config.Get
       Config.Set
-      Helpers
+      Config.Update
       Log
       Log.Console
       Log.File
       Log.Level
+      Request
+      Request.Modify
       Session
       Tests
       Tests.Base

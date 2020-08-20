@@ -1,19 +1,18 @@
-module Helpers
-  ( Helpers.getKeys
+module Config.Update
+  ( getKeys
   , getLastObj
   , checkUpdates
   , updateConfig
   , updateRepeatN
   , msgHandler
   , updateRandomId
-  , addKeyboard
   , unpackUpdates
   ) where
 
 import Base
 import Bot
-import Bot.Telegram as Telegram
-import Bot.Vk as Vk
+import qualified Bot.Telegram as Telegram
+import qualified Bot.Vk as Vk
 import Config
 import Config.Get
 
@@ -24,9 +23,6 @@ import qualified Data.Function as Func
 
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Text as T
-import qualified Data.Text.Encoding as TE
-
-import qualified Network.HTTP.Simple as HTTPSimple
 
 type Message = T.Text
 
@@ -123,17 +119,6 @@ updateRandomId = do
   randomN <- fromIO getRandomInteger
   let randomId = A.Number . read $ show randomN
   modifyConfig $ HM.insert "random_id" randomId
-
-addKeyboard :: ReqApp ()
-addKeyboard = do
-  req <- getApp
-  (Config.Handle config _) <- fromApp getApp
-  putApp $ case getKeyboard config of
-    (keybField, A.String keybValue):_ ->
-      HTTPSimple.addToRequestQueryString
-        [(TE.encodeUtf8 keybField, Just $ TE.encodeUtf8 keybValue)]
-        req
-    _ -> req
 
 unpackUpdates :: A.Value -> App Updates
 unpackUpdates (A.Object obj) = do

@@ -5,24 +5,19 @@ module Session
 import Base
 import Config
 import Config.Get
-import Helpers
-import Log.Console
+import Config.Update
+import Log
+import Request
 
 import qualified Data.Aeson as A
 import qualified Data.HashMap.Strict as HM
-
-import qualified Network.HTTP.Simple as HTTPSimple
 
 runBot :: App ()
 runBot = do
   (Config.Handle config _) <- getApp
   let bot = getBot config
   fromIO $ infoM " " $ show bot <> " bot is selected."
-  let request = getStartRequest config
-  fromIO $ infoM "Session:26" "Start Request"
-  response <- fromIO $ HTTPSimple.httpJSON request
-  fromIO $ infoM " " "Success"
-  let json = HTTPSimple.getResponseBody response
+  json <- startRequest
   localConfig <- runRApp (getKeys json) bot
   modifyConfig $ HM.union localConfig
   liveSession
@@ -54,26 +49,5 @@ sendMessage :: Integer -> App ()
 sendMessage 0 = liveSession
 sendMessage n = do
   updateRandomId
-  (Config.Handle config _) <- getApp
-  let reqDefault = getSendRequest config
-  request <- runSApp modifyRequest reqDefault
-  fromIO $ print request
-  fromIO $ debugM "Session:61" "Send Request"
-  _ <- fromIO $ HTTPSimple.httpBS request
-  fromIO $ debugM " " "Success"
+  sendRequest
   sendMessage (n - 1)
-
-modifyRequest :: ReqApp HTTPSimple.Request
-modifyRequest = do
-  addKeyboard
-  getApp
-
-askRequest :: A.FromJSON a => App a
-askRequest = do
-  (Config.Handle config _) <- getApp
-  let request = getAskRequest config
-  fromIO $ debugM "Session:74 " "Ask Request"
-  response <- fromIO $ HTTPSimple.httpJSON request
-  fromIO $ debugM " " "Success"
-  json <- HTTPSimple.getResponseBody response
-  return json
