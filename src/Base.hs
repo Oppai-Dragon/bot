@@ -5,6 +5,7 @@ module Base
   , getRepDir
   , getValue
   , getRandomInteger
+  , getTime
   , fromApp
   , fromIO
   , askApp
@@ -30,6 +31,8 @@ import qualified Data.Text as T
 
 import qualified System.Directory as Dir
 import qualified System.Random as Random
+import qualified Data.Time.Clock as Time
+import qualified Data.Time.Format.ISO8601 as TimeFormat
 
 parsePath :: FilePath -> FilePath
 parsePath =
@@ -56,6 +59,13 @@ getValue (field:rest) objOld =
 
 getRandomInteger :: IO Integer
 getRandomInteger = Random.getStdRandom (Random.randomR (1, 100000000000))
+
+getTime :: IO String
+getTime = do
+  utcTime <- Time.getCurrentTime
+  let utcTimeStr = TimeFormat.iso8601Show utcTime
+  let time = L.takeWhile (/='.') . tail $ L.dropWhile (/='T') utcTimeStr
+  return time
 
 fromApp ::
      MonadClass.MonadTrans t

@@ -1,32 +1,77 @@
 module Log.Console
-  ( debugM
+  ( logM
+  , debugM
   , infoM
   , warningM
   , errorM
+  , tryM
+  , prettyLog
+  , prettyFileLog
   ) where
 
+import Base
+import Log.File
+import Log.Handle
 import Log.Level
 
+import Control.Exception
 import Debug.Trace
+import GHC.Stack
 
 -------------------------------------------------------------------------------
 -- * Basic
-logM -- Log a message using the given logger at a given priority
+logM -- Log a message using the given logger at a given level
  ::
-     String -- Name of the logger to use
-  -> Level -- Priority of this message
+     HasCallStack
+  => Handle
+  -> Level
   -> String -- The log text itself
   -> IO ()
-logM nameLog priority text =
-  traceIO $ "[" <> show priority <> "] " <> nameLog <> text
+logM (Handle path maybeLevel) level text = do
+  time <- getTime
+  let prettyLoc = prettyFileLog callStack
+  let msg = time <> "-" <> prettyLog level text <> "\n\t" <> prettyLoc <> "\n"
+  case maybeLevel of
+    Just currentLevel ->
+      if currentLevel >= level
+        then writeLog path msg
+        else return ()
+    Nothing -> writeLog path msg
 
 -------------------------------------------------------------------------------
 -- * Utility Functions
-debugM, infoM, warningM, errorM :: String -> String -> IO ()
+debugM, infoM, warningM, errorM :: HasCallStack => Handle -> String -> IO ()
 debugM = (`logM` DEBUG)
 
 infoM = (`logM` INFO)
 
 warningM = (`logM` WARNING)
 
-errorM = (`logM` ERROR)
+errorM logHandle msg = do
+  logM logHandle ERROR msg
+  traceIO $ prettyLog ERROR msg
+  traceIO $ prettyFileLog callStack
+
+tryM :: IO a -> IO (Either SomeException a)
+tryM = try
+
+-------------------------------------------------------------------------------
+-- * Readables
+prettyLog :: Level -> String -> String
+prettyLog level text = "[" <> show level <> "] " <> text
+
+prettyFileLog :: CallStack -> String
+prettyFileLog stack =
+  let srcLoc = snd . last $ getCallStack stack
+      fileLoc = srcLocFile srcLoc
+      startLine = show $ srcLocStartLine srcLoc
+      startColumn = show $ srcLocStartCol srcLoc
+      endLine = show $ srcLocEndLine srcLoc
+      endColumn = show $ srcLocEndCol srcLoc
+      moduleLoc = srcLocModule srcLoc
+   in "Called at " <>
+      fileLoc <>
+      " " <>
+      startLine <>
+      ":" <>
+      startColumn <> "-" <> endLine <> ":" <> endColumn <> " in " <> moduleLoc

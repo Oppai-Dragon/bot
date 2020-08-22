@@ -16,30 +16,29 @@ import qualified Network.HTTP.Simple as HTTPSimple
 
 startRequest :: A.FromJSON a => App a
 startRequest = do
-  (Config.Handle config _) <- getApp
+  (Config.Handle config logHandle) <- getApp
   let request = getStartRequest config
-  fromIO $ infoM "Session:26" "Start Request"
+  fromIO $ infoM logHandle "Start Request"
   response <- fromIO $ HTTPSimple.httpJSON request
-  fromIO $ infoM " " "Success"
+  fromIO $ infoM logHandle "Success"
   let json = HTTPSimple.getResponseBody response
   return json
 
 askRequest :: A.FromJSON a => App a
 askRequest = do
-  (Config.Handle config _) <- getApp
+  (Config.Handle config logHandle) <- getApp
   let request = getAskRequest config
-  fromIO $ debugM "Session:74 " "Ask Request"
+  fromIO $ debugM logHandle "Ask Request"
   response <- fromIO $ HTTPSimple.httpJSON request
-  fromIO $ debugM " " "Success"
+  fromIO $ debugM logHandle "Success"
   let json = HTTPSimple.getResponseBody response
   return json
 
 sendRequest :: App ()
 sendRequest = do
-  (Config.Handle config _) <- getApp
+  (Config.Handle config logHandle) <- getApp
   let reqDefault = getSendRequest config
   request <- runSApp modifyRequest reqDefault
-  fromIO $ print request
-  fromIO $ debugM "Session:61" "Send Request"
+  fromIO $ debugM logHandle "Send Request"
   _ <- fromIO $ HTTPSimple.httpBS request
-  fromIO $ debugM " " "Success"
+  fromIO $ debugM logHandle "Success"

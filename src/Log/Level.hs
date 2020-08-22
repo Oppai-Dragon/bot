@@ -10,6 +10,7 @@ data Level
   | INFO -- Information
   | WARNING -- General Warnings
   | ERROR -- General Errors
+  deriving Show
 
 instance Bounded Level where
   minBound = DEBUG
@@ -39,14 +40,6 @@ instance Read Level where
       "warning" -> [(WARNING, "")]
       "error" -> [(ERROR, "")]
       _ -> []
-
-instance Show Level where
-  show x =
-    case x of
-      DEBUG -> "DEBUG"
-      INFO -> "INFO"
-      WARNING -> "WARNING"
-      ERROR -> "ERROR"
 
 instance A.FromJSON Level where
   parseJSON =

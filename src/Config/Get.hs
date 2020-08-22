@@ -18,6 +18,7 @@ module Config.Get
 import Base
 import Bot
 import Config
+import Log
 
 import qualified Data.Aeson as A
 import qualified Data.Aeson.Types as AT
@@ -125,7 +126,14 @@ getRepeatMsg conf =
              else x) $
       T.words repeatMsg
 
-getBot :: Config -> Bot
-getBot conf =
-  let (A.String text) = getValue ["bot"] conf
-   in read . T.unpack $ text
+getBot :: Config.Handle -> IO Bot
+getBot (Config.Handle conf logHandle) = do
+  let botT = case getValue ["bot"] conf of
+        A.String name -> name
+        _ -> ""
+  let errorLog = const $ errorM logHandle "Can't read bot name, check his name in Config.json with name in Bot.hs"
+  let infoLog = const $ infoM logHandle "Bot is readable"
+  let bot = read $ T.unpack botT :: Bot
+  result <- tryM $ return bot
+  either infoLog errorLog result
+  return bot

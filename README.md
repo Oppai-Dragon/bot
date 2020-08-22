@@ -9,7 +9,7 @@ This is a simple echo bot - it sends back what it received. He works in a telegr
 #### src/Config.json.
 
 ```json
-{ "bot":"vk"
+{ "bot":"Vk"
 , "repeatN":1
 , "repeatMsg":"At the moment, I repeat what you said times. Press the button with the number, with the desired number of repetitions."
 , "helpMsg":"Hey. I am a simple echo-bot - I write back what they wrote to me. If you want to change how many times I reply to one of your messages, then write /repeat "
@@ -32,7 +32,7 @@ This is a simple echo bot - it sends back what it received. He works in a telegr
 DEBUG < INFO < WARNING < ERROR. Thus, by entering a certain level of logging into the value of the "logLevel" field, the application will send logs whose level is either equal to or higher than the specified level.
 
 
-#### VK Bot
+#### Vk Bot
 
 Create this file at the specified path using the data below.
 - src/Bot/Vk/Vk.json
