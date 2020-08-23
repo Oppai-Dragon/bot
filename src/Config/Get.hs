@@ -72,7 +72,8 @@ getRequestParams obj =
 
 buildRequest :: Field -> Fields -> Config -> HTTPClient.Request
 buildRequest path params conf =
-  let initRequest = HTTPClient.parseRequest_ . T.unpack $ parseRequestPath path conf
+  let initRequest =
+        HTTPClient.parseRequest_ . T.unpack $ parseRequestPath path conf
       toBS field =
         case getValue [field] conf of
           A.String text -> TE.encodeUtf8 text
@@ -81,7 +82,9 @@ buildRequest path params conf =
           A.Bool bool -> TE.encodeUtf8 . T.pack . show $ bool
           _ -> ""
       pairs = map (\x -> (TE.encodeUtf8 x, toBS x)) params
-      request = (HTTPClient.urlEncodedBody pairs initRequest) {HTTPClient.method = "POST"}
+      request =
+        (HTTPClient.urlEncodedBody pairs initRequest)
+          {HTTPClient.method = "POST"}
    in request
 
 valueToInteger :: A.Value -> Integer
@@ -128,12 +131,12 @@ getRepeatMsg conf =
 
 getBot :: Config.Handle -> IO Bot
 getBot (Config.Handle conf logHandle) = do
-  let botT = case getValue ["bot"] conf of
-        A.String name -> name
-        _ -> ""
-  let errorLog = const $ errorM logHandle "Can't read bot name, check his name in Config.json with name in Bot.hs"
-  let infoLog = const $ infoM logHandle "Bot is readable"
-  let bot = read $ T.unpack botT :: Bot
-  result <- tryM $ return bot
-  either infoLog errorLog result
-  return bot
+  let maybeBot = AT.parseMaybe (\x -> x A..: "bot" >>= A.parseJSON) conf
+  case maybeBot of
+    Just bot -> infoM logHandle "Bot is readable" >> return bot
+    Nothing ->
+      errorM
+        logHandle
+        "Can't read bot name, check his name in Config.json with name in Bot.hs" >>
+      infoM logHandle "Will use Vk implementation" >>
+      return Vk

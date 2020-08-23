@@ -14,26 +14,26 @@ import qualified Data.HashMap.Strict as HM
 
 runBot :: App ()
 runBot = do
-  (Config.Handle config logHandle) <- getApp
-  let bot = getBot config
+  handle@(Config.Handle _ logHandle) <- getApp
+  bot <- fromIO $ getBot handle
   fromIO $ infoM logHandle $ show bot <> " bot is selected."
   json <- startRequest
   localConfig <- runRApp (getKeys json) bot
   modifyConfig $ HM.union localConfig
-  liveSession
+  runRApp liveSession bot
 
-liveSession :: App ()
+liveSession :: BotApp ()
 liveSession = do
-  handle@(Config.Handle config logHandle) <- getApp
-  json <- askRequest
-  let bot = getBot handle
-  updates' <- unpackUpdates json
-  updates <- checkUpdates updates'
+  (Config.Handle _ logHandle) <- fromApp getApp
+  json <- fromApp $ askRequest
+  updates' <- fromApp $ unpackUpdates json
+  updates <- fromApp $ checkUpdates updates'
   if HM.null updates
     then liveSession
-    else fromIO (debugM logHandle "The message is received.") >>
-         runRApp (updateConfig updates json) bot >>
-         echoMessage
+    else (fromApp . fromIO) (debugM logHandle "The message is received") >>
+         updateConfig updates json >>
+         fromApp echoMessage >>
+         liveSession
 
 echoMessage :: App ()
 echoMessage = do
@@ -46,7 +46,7 @@ echoMessage = do
   sendMessage repeatN
 
 sendMessage :: Integer -> App ()
-sendMessage 0 = liveSession
+sendMessage 0 = return ()
 sendMessage n = do
   updateRandomId
   sendRequest

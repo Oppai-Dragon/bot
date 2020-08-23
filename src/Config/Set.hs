@@ -15,7 +15,6 @@ import qualified Data.Aeson as A
 import qualified Data.Aeson.Types as AT
 import qualified Data.ByteString.Lazy as BSL
 import qualified Data.HashMap.Strict as HM
-import qualified Data.Text as T
 
 set :: FilePath -> IO A.Object
 set path = do
@@ -33,15 +32,21 @@ setConfig = do
   repDir <- getRepDir
   logPath <- setLogPath
   config <- set $ repDir <> "\\src\\Config.json"
-  let bot = case getValue ["bot"] config of
-        A.String name -> name
-        _ -> ""
-  let maybeLevel = AT.parseMaybe A.parseJSON (A.Object config)
+  let maybeBot = AT.parseMaybe (\x -> x A..: "bot" >>= A.parseJSON) config
+  let maybeLevel =
+        AT.parseMaybe (\x -> x A..: "logLevel" >>= A.parseJSON) config
   let logHandle = Handle logPath maybeLevel
-  let errorLog = const $ errorM logHandle "Can't find bot implementation, check his name in Config.json"
-  let infoLog = const $ infoM logHandle "Bot implementation is found"
-  result <- tryM (return . read $ T.unpack bot :: IO Bot)
-  either infoLog errorLog result
-  let botPath = T.unpack $ "\\src\\Bot\\" <> bot <> "\\" <> bot <> ".json"
+  let errorLog =
+        errorM
+          logHandle
+          "Can't find bot implementation, check his name in Config.json"
+  let infoLog = infoM logHandle "Bot implementation is found"
+  bot <-
+    case maybeBot of
+      Just x -> infoLog >> return x
+      Nothing ->
+        errorLog >> infoM logHandle "Will be used Vk implementation" >> return Vk
+  let botStr = show bot
+  let botPath = "\\src\\Bot\\" <> botStr <> "\\" <> botStr <> ".json"
   botConfig <- set $ repDir <> botPath
   return $ HM.unions [botConfig, config]

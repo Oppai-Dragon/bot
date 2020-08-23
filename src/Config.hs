@@ -60,7 +60,7 @@ testHandle = Config.Handle testConfig (Log.Handle "" Nothing)
 testConfig :: A.Object
 testConfig =
   HM.fromList
-    [ ("bot", A.String "vk")
+    [ ("bot", A.String "Vk")
     , ( "start_request"
       , (A.Object . HM.fromList)
           [ ( "path"
@@ -91,5 +91,5 @@ testConfig =
     , ( "helpMsg"
       , A.String
           "Hey. I am a simple echo-bot - I write back what they wrote to me. If you want to change how many times I reply to one of your messages, then write /repeat ")
-    , ("logLevel", A.String "DEBUG")
+    , ("logLevel", A.String "debug")
     ]

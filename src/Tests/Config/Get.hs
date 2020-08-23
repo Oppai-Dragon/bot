@@ -2,7 +2,6 @@ module Tests.Config.Get
   ( configGetTests
   ) where
 
-import Bot
 import Config
 import Config.Get
 
@@ -22,10 +21,9 @@ configGetTests =
   , TestLabel "getUnpackFieldTest" getUnpackFieldTest
   , TestLabel "getKeyboardTest" getKeyboardTest
   , TestLabel "getRepeatMsgTest" getRepeatMsgTest
-  , TestLabel "getBotTest" getBotTest
   ]
 
-getRequestObjTest, getRequestPathTest, getRequestParamsTest, valueToIntegerTest, parseRequestPathTest, getUnpackFieldTest, getKeyboardTest, getRepeatMsgTest, getBotTest ::
+getRequestObjTest, getRequestPathTest, getRequestParamsTest, valueToIntegerTest, parseRequestPathTest, getUnpackFieldTest, getKeyboardTest, getRepeatMsgTest ::
      Test
 getRequestObjTest =
   TestCase $
@@ -80,9 +78,6 @@ getRepeatMsgTest =
     "for (getRepeatMsg testConfig)"
     "At the moment, I repeat what you said 1 times. Press the button with the number, with the desired number of repetitions." $
   getRepeatMsg testConfig
-
-getBotTest =
-  TestCase $ assertEqual "for (getBot testConfig)" Vk $ getBot testConfig
 
 testStartRequestConfig :: Object
 testStartRequestConfig =

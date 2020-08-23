@@ -13,5 +13,6 @@ new :: IO Handle
 new = do
   config <- setConfig
   logPath <- setLogPath
-  let maybeLevel = AT.parseMaybe A.parseJSON (A.Object config)
+  let maybeLevel =
+        AT.parseMaybe (\x -> x A..: "logLevel" >>= A.parseJSON) config
   return $ Handle logPath maybeLevel

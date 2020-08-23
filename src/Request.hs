@@ -20,7 +20,7 @@ startRequest = do
   let request = getStartRequest config
   fromIO $ infoM logHandle "Start Request"
   response <- fromIO $ HTTPSimple.httpJSON request
-  fromIO $ infoM logHandle "Success"
+  fromIO $ infoM logHandle "Response getted"
   let json = HTTPSimple.getResponseBody response
   return json
 
@@ -30,7 +30,7 @@ askRequest = do
   let request = getAskRequest config
   fromIO $ debugM logHandle "Ask Request"
   response <- fromIO $ HTTPSimple.httpJSON request
-  fromIO $ debugM logHandle "Success"
+  fromIO $ infoM logHandle "Response getted"
   let json = HTTPSimple.getResponseBody response
   return json
 
@@ -41,4 +41,4 @@ sendRequest = do
   request <- runSApp modifyRequest reqDefault
   fromIO $ debugM logHandle "Send Request"
   _ <- fromIO $ HTTPSimple.httpBS request
-  fromIO $ debugM logHandle "Success"
+  fromIO $ infoM logHandle "Message sended"

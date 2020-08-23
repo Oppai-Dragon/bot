@@ -15,11 +15,12 @@ import qualified Bot.Telegram as Telegram
 import qualified Bot.Vk as Vk
 import Config
 import Config.Get
+import Log
 
 import qualified Data.Aeson as A
 import qualified Data.Aeson.Types as AT
-import qualified Data.Char as C
-import qualified Data.Function as Func
+import Data.Function
+import qualified Data.Scientific as Scientific
 
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Text as T
@@ -31,18 +32,24 @@ type Updates = A.Object
 getKeys :: A.Value -> BotApp Updates
 getKeys (A.Object obj) = do
   bot <- askApp
-  (Config.Handle config _) <- fromApp getApp
+  (Config.Handle config logHandle) <- fromApp getApp
   let field = getUnpackField "start_request" config
   let updateObj =
         case AT.parseMaybe (A..: field) obj of
           Just (A.Array vector) -> getLastObj (A.Array vector)
           Just (A.Object responseObj) -> responseObj
           _ -> HM.empty
-  updateObj Func.&
-    case bot of
-      Bot.Vk -> Vk.getKeys
-      Bot.Telegram -> Telegram.getKeys
-getKeys _ = pure HM.empty
+  if HM.null updateObj
+    then (fromApp . fromIO) (warningM logHandle "Can't unpack response of request") >>
+         return HM.empty
+    else updateObj &
+         case bot of
+           Bot.Vk -> Vk.getKeys
+           Bot.Telegram -> Telegram.getKeys
+getKeys _ = do
+  (Config.Handle _ logHandle) <- fromApp getApp
+  fromApp . fromIO $ warningM logHandle "Empty json response"
+  pure HM.empty
 
 getLastObj :: A.Value -> Updates
 getLastObj value =
@@ -70,7 +77,7 @@ updateConfig updates (A.Object response) = do
   bot <- askApp
   msg <-
     fromApp $
-    updates Func.&
+    updates &
     case bot of
       Bot.Vk -> runRApp (Vk.update response)
       Bot.Telegram -> runRApp Telegram.update
@@ -83,17 +90,13 @@ updateRepeatN msg = do
   (Config.Handle config _) <- getApp
   let lastMsg = getValue ["lastMsg"] config
   let msgStr = T.unpack msg
-  let greatThenNull n =
-        if n <= 0
-          then 1
-          else n
   let oldRepeatN = getValue ["repeatN"] config
   let repeatN =
         case lastMsg of
           A.String "/repeat" ->
             A.Number $
-            if all C.isDigit msgStr
-              then greatThenNull $ read msgStr
+            if any (msgStr ==) ["5", "4", "3", "2", "1"]
+              then read msgStr
               else 1
           _ -> oldRepeatN
   modifyConfig $ HM.insert "repeatN" repeatN
@@ -117,7 +120,7 @@ msgHandler msg = do
 updateRandomId :: App ()
 updateRandomId = do
   randomN <- fromIO getRandomInteger
-  let randomId = A.Number . read $ show randomN
+  let randomId = A.Number $ Scientific.scientific randomN 0
   modifyConfig $ HM.insert "random_id" randomId
 
 unpackUpdates :: A.Value -> App Updates

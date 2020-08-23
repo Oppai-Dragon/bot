@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 2b037755570ebe6bc0379a31cbb6eedfd9a41a13176ca2ddef59e374beed730c
+-- hash: 897ac47f08f8f85ec24f220b86b54003610f1a27f8ea063d6a3b307fd0cce04f
 
 name:           bot
 version:        0.1.0.0
@@ -65,6 +65,7 @@ library
     , http-client
     , http-conduit
     , random
+    , scientific
     , text
     , time
     , transformers
@@ -90,6 +91,7 @@ executable bot-exe
     , http-client
     , http-conduit
     , random
+    , scientific
     , text
     , time
     , transformers
@@ -116,6 +118,7 @@ test-suite bot-test
     , http-client
     , http-conduit
     , random
+    , scientific
     , text
     , time
     , transformers

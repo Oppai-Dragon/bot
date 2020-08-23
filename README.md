@@ -13,7 +13,7 @@ This is a simple echo bot - it sends back what it received. He works in a telegr
 , "repeatN":1
 , "repeatMsg":"At the moment, I repeat what you said times. Press the button with the number, with the desired number of repetitions."
 , "helpMsg":"Hey. I am a simple echo-bot - I write back what they wrote to me. If you want to change how many times I reply to one of your messages, then write /repeat "
-, "logLevel":"DEBUG"
+, "logLevel":"debug"
 }
 ```
 
@@ -25,11 +25,11 @@ This is a simple echo bot - it sends back what it received. He works in a telegr
    - repeatMsg: this is a message that is sent in response to the /repeat command.
    - helpMsg: this is a message that is sent in response to the /help command.
 4. logLevel: during the execution of the program, on the passage of key and not only moments, logs will be sent to the console. Only 4 levels: DEBUG, INFO, WARNING, ERROR.
-   - DEBUG is the most insignificant.
-   - INFO - reports on key points.
-   - WARNING - warns of possible errors.
-   - ERROR - indicates a critical error, which prevents further execution.
-DEBUG < INFO < WARNING < ERROR. Thus, by entering a certain level of logging into the value of the "logLevel" field, the application will send logs whose level is either equal to or higher than the specified level.
+   - debug is the most insignificant.
+   - infog - reports on key points.
+   - warning - warns of possible errors.
+   - error - indicates a critical error, which prevents further execution.
+debug < infog < warning < error. Thus, by entering a certain level of logging into the value of the "logLevel" field, the application will send logs whose level is either equal to or higher than the specified level.
 
 
 #### Vk Bot
@@ -213,7 +213,7 @@ ReaderT appears at the message processing level.
 * src/Bot/<Bot>.hs - a certain functionality peculiar to this bot is prescribed.
 * src/Helpers.hs - bad name. But here are the functions that update the config using functions from src/Bot/<Bot>.hs.
 * src/Log.hs and src/Log/Methods.hs - minimal logging.
-* src/Tests.hs - a function that collects tests that are written in different modules.
+* src/Tests.hs - a function that collects tests that are written in src/Tests.
 
 ### Adding new bots
 
@@ -231,6 +231,7 @@ Let the bot's name be Li. You need to create a folder in src/Bot/Li and the file
 * [vector](https://hackage.haskell.org/package/vector), [unordered-containers](https://hackage.haskell.org/package/unordered-containers) - For constructing Value from aeson.
 * [transformers](https://hackage.haskell.org/package/transformers) - For architecture.
 * [directory](https://hackage.haskell.org/package/directory) - To read the config regardless of the position of the repository on disk.
+* [time](https://hackage.haskell.org/package/time) - Naming logs
 
 ## Authors
 

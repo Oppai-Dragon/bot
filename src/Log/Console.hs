@@ -33,7 +33,7 @@ logM (Handle path maybeLevel) level text = do
   let msg = time <> "-" <> prettyLog level text <> "\n\t" <> prettyLoc <> "\n"
   case maybeLevel of
     Just currentLevel ->
-      if currentLevel >= level
+      if currentLevel <= level
         then writeLog path msg
         else return ()
     Nothing -> writeLog path msg
@@ -45,7 +45,10 @@ debugM = (`logM` DEBUG)
 
 infoM = (`logM` INFO)
 
-warningM = (`logM` WARNING)
+warningM logHandle msg = do
+  logM logHandle WARNING msg
+  traceIO $ prettyLog WARNING msg
+  traceIO $ prettyFileLog callStack
 
 errorM logHandle msg = do
   logM logHandle ERROR msg

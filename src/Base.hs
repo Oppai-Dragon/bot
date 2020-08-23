@@ -31,8 +31,7 @@ import qualified Data.Text as T
 
 import qualified System.Directory as Dir
 import qualified System.Random as Random
-import qualified Data.Time.Clock as Time
-import qualified Data.Time.Format.ISO8601 as TimeFormat
+import qualified Data.Time.LocalTime as LocalTime
 
 parsePath :: FilePath -> FilePath
 parsePath =
@@ -62,9 +61,9 @@ getRandomInteger = Random.getStdRandom (Random.randomR (1, 100000000000))
 
 getTime :: IO String
 getTime = do
-  utcTime <- Time.getCurrentTime
-  let utcTimeStr = TimeFormat.iso8601Show utcTime
-  let time = L.takeWhile (/='.') . tail $ L.dropWhile (/='T') utcTimeStr
+  zonedTime <- LocalTime.getZonedTime
+  let zonedTimeStr = show zonedTime
+  let time = L.takeWhile (/='.') . tail $ L.dropWhile (/=' ') zonedTimeStr
   return time
 
 fromApp ::
