@@ -45,7 +45,8 @@ setConfig = do
     case maybeBot of
       Just x -> infoLog >> return x
       Nothing ->
-        errorLog >> infoM logHandle "Will be used Vk implementation" >> return Vk
+        errorLog >> infoM logHandle "Will be used Vk implementation" >>
+        return Vk
   let botStr = show bot
   let botPath = "\\src\\Bot\\" <> botStr <> "\\" <> botStr <> ".json"
   botConfig <- set $ repDir <> botPath
