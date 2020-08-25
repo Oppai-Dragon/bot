@@ -95,7 +95,7 @@ updateRepeatN msg = do
         case lastMsg of
           A.String "/repeat" ->
             A.Number $
-            if any (msgStr ==) ["5", "4", "3", "2", "1"]
+            if elem msgStr ["5", "4", "3", "2", "1"]
               then read msgStr
               else 1
           _ -> oldRepeatN

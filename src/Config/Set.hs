@@ -1,5 +1,3 @@
-{-# LANGUAGE LambdaCase #-}
-
 module Config.Set
   ( set
   , setConfig

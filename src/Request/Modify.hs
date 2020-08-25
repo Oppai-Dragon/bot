@@ -12,6 +12,8 @@ import qualified Data.Aeson as A
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Text.Encoding as TE
 
+import Control.Monad
+
 import qualified Network.HTTP.Simple as HTTPSimple
 
 modifyRequest :: ReqApp HTTPSimple.Request
@@ -29,12 +31,11 @@ addKeyboard :: ReqApp ()
 addKeyboard = do
   req <- getApp
   (Config.Handle config logHandle) <- fromApp getApp
-  if isNeedKeyboard config
-    then (>>) (fromApp . fromIO $ debugM logHandle "Add keyboard") . putApp $
-         case getKeyboard config of
-           (keybField, A.String keybValue):_ ->
-             HTTPSimple.addToRequestQueryString
-               [(TE.encodeUtf8 keybField, Just $ TE.encodeUtf8 keybValue)]
-               req
-           _ -> req
-    else return ()
+  when (isNeedKeyboard config) $
+    (>>) (fromApp . fromIO $ debugM logHandle "Add keyboard") . putApp $
+    case getKeyboard config of
+      (keybField, A.String keybValue):_ ->
+        HTTPSimple.addToRequestQueryString
+          [(TE.encodeUtf8 keybField, Just $ TE.encodeUtf8 keybValue)]
+          req
+      _ -> req

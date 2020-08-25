@@ -45,8 +45,7 @@ data Handle =
 new :: IO Config.Handle
 new = do
   conf <- setConfig
-  logHandle <- Log.new
-  return $ Config.Handle conf logHandle
+  Config.Handle conf <$> Log.new
 
 modifyConfig :: (Config -> Config) -> App ()
 modifyConfig func = do

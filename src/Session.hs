@@ -25,7 +25,7 @@ runBot = do
 liveSession :: BotApp ()
 liveSession = do
   (Config.Handle _ logHandle) <- fromApp getApp
-  json <- fromApp $ askRequest
+  json <- fromApp askRequest
   updates' <- fromApp $ unpackUpdates json
   updates <- fromApp $ checkUpdates updates'
   if HM.null updates
