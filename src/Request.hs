@@ -18,29 +18,29 @@ startRequest :: A.FromJSON a => App a
 startRequest = do
   (Config.Handle config logHandle) <- getApp
   let request = getStartRequest config
-  fromIO $ infoM logHandle "Start Request"
+  liftIO $ infoM logHandle "Start Request"
   responseJSON request
 
 askRequest :: A.FromJSON a => App a
 askRequest = do
   (Config.Handle config logHandle) <- getApp
   let request = getAskRequest config
-  fromIO $ debugM logHandle "Ask Request"
+  liftIO $ debugM logHandle "Ask Request"
   responseJSON request
 
 sendRequest :: App ()
 sendRequest = do
   (Config.Handle config logHandle) <- getApp
   let reqDefault = getSendRequest config
-  request <- runSApp modifyRequest reqDefault
-  fromIO $ debugM logHandle "Send Request"
-  _ <- fromIO $ HTTPSimple.httpBS request
-  fromIO $ infoM logHandle "Message sended"
+  request <- evalApp modifyRequest reqDefault
+  liftIO $ debugM logHandle "Send Request"
+  _ <- liftIO $ HTTPSimple.httpBS request
+  liftIO $ infoM logHandle "Message sended"
 
 responseJSON :: A.FromJSON a => HTTPSimple.Request -> App a
 responseJSON req = do
   (Config.Handle _ logHandle) <- getApp
-  response <- fromIO $ HTTPSimple.httpJSON req
-  fromIO $ infoM logHandle "Response getted"
+  response <- liftIO $ HTTPSimple.httpJSON req
+  liftIO $ infoM logHandle "Response getted"
   let json = HTTPSimple.getResponseBody response
   return json

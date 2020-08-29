@@ -23,26 +23,24 @@ botTelegramTests =
 getKeysTest, updateTest, getMsgTest :: Test
 getKeysTest =
   TestCase $
-  runApp (runRApp (getKeys testUpdatesObj) Telegram) testHandle >>= \(a, _) ->
-    assertEqual
-      "for (runApp (runRApp (getKeys testUpdatesObj) Telegram) testHandle >>= \\(a, _) -> return a)"
-      (HM.singleton "chat_id" (A.Number 1))
-      a
+  evalApp (runSubApp (getKeys testUpdatesObj) Telegram) testHandle >>=
+  assertEqual
+    "for (evalApp (runSubApp (getKeys testUpdatesObj) Telegram) testHandle >>= \\(a, _) -> return a)"
+    (HM.singleton "chat_id" (A.Number 1))
 
 updateTest =
   TestCase $
-  runApp (runRApp update testUpdatesObj) testHandle >>=
+  runApp (runSubApp update testUpdatesObj) testHandle >>=
   assertEqual
-    "for (runApp (runRApp update testUpdatesObj) testHandle)"
+    "for (runApp (runSubApp update testUpdatesObj) testHandle)"
     ("suka", testUpdatedHandle)
 
 getMsgTest =
   TestCase $
-  runApp (runRApp getMsg testUpdatesObj) testHandle >>= \(a, _) ->
-    assertEqual
-      "for (runApp (runRApp getMsg testUpdatesObj) testHandle >>= \\(a,_) -> return a)"
-      "suka"
-      a
+  evalApp (runSubApp getMsg testUpdatesObj) testHandle >>=
+  assertEqual
+    "for (evalApp (runSubApp getMsg testUpdatesObj) testHandle)"
+    "suka"
 
 testUpdatedHandle :: Config.Handle
 testUpdatedHandle = Config.Handle testUpdatedConfig (Log.Handle "" Nothing)

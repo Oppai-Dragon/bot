@@ -6,13 +6,14 @@ module Base
   , getValue
   , getRandomInteger
   , getTime
-  , fromApp
-  , fromIO
-  , askApp
+  , liftApp
+  , liftIO
+  , askSubApp
   , getApp
   , putApp
-  , runRApp
-  , runSApp
+  , runSubApp
+  , evalApp
+  , execApp
   , runApp
   ) where
 
@@ -20,6 +21,7 @@ module Base
  This module has functions that may be needed in any module,
 therefore the import of modules of this project is strictly prohibited.
 -}
+import Control.Monad.IO.Class
 import Control.Monad.Trans.Class
 import Control.Monad.Trans.Reader
 import Control.Monad.Trans.State.Strict
@@ -65,14 +67,11 @@ getTime = do
   let time = L.takeWhile (/= '.') . tail $ L.dropWhile (/= ' ') zonedTimeStr
   return time
 
-fromApp :: MonadTrans t => StateT s IO a -> t (StateT s IO) a
-fromApp = lift
+liftApp :: MonadTrans t => StateT s IO a -> t (StateT s IO) a
+liftApp = lift
 
-fromIO :: MonadTrans t => IO a -> t IO a
-fromIO = lift
-
-askApp :: Monad m => ReaderT r m r
-askApp = ask
+askSubApp :: Monad m => ReaderT r m r
+askSubApp = ask
 
 getApp :: Monad m => StateT s m s
 getApp = get
@@ -80,11 +79,14 @@ getApp = get
 putApp :: Monad m => s -> StateT s m ()
 putApp = put
 
-runRApp :: Monad m => ReaderT b m a -> b -> m a
-runRApp = runReaderT
+runSubApp :: Monad m => ReaderT b m a -> b -> m a
+runSubApp = runReaderT
 
-runSApp :: Monad m => StateT s m a -> s -> m a
-runSApp = evalStateT
+evalApp :: Monad m => StateT s m a -> s -> m a
+evalApp = evalStateT
+
+execApp :: Monad m => StateT s m a -> s -> m s
+execApp = execStateT
 
 runApp :: Monad m => StateT s m a -> s -> m (a, s)
 runApp = runStateT

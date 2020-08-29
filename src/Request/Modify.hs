@@ -30,9 +30,9 @@ isNeedKeyboard conf =
 addKeyboard :: ReqApp ()
 addKeyboard = do
   req <- getApp
-  (Config.Handle config logHandle) <- fromApp getApp
+  (Config.Handle config logHandle) <- liftApp getApp
   when (isNeedKeyboard config) $
-    (>>) (fromApp . fromIO $ debugM logHandle "Add keyboard") . putApp $
+    (>>) (liftApp . liftIO $ debugM logHandle "Add keyboard") . putApp $
     case getKeyboard config of
       (keybField, A.String keybValue):_ ->
         HTTPSimple.addToRequestQueryString

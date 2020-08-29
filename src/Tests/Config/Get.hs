@@ -54,7 +54,7 @@ parseRequestPathTest =
   TestCase $
   assertEqual
     "for (parseRequestPath \"<logLevel>\" testConfig)"
-    "beforeDEBUGafter" $
+    "beforedebugafter" $
   parseRequestPath "before<logLevel>after" testConfig
 
 getUnpackFieldTest =

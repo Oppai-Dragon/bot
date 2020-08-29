@@ -15,24 +15,24 @@ import qualified Data.HashMap.Strict as HM
 runBot :: App ()
 runBot = do
   handle@(Config.Handle _ logHandle) <- getApp
-  bot <- fromIO $ getBot handle
-  fromIO $ infoM logHandle $ show bot <> " bot is selected."
+  bot <- liftIO $ getBot handle
+  liftIO $ infoM logHandle $ show bot <> " bot is selected."
   json <- startRequest
-  localConfig <- runRApp (getKeys json) bot
+  localConfig <- runSubApp (getKeys json) bot
   modifyConfig $ HM.union localConfig
-  runRApp liveSession bot
+  runSubApp liveSession bot
 
 liveSession :: BotApp ()
 liveSession = do
-  (Config.Handle _ logHandle) <- fromApp getApp
-  json <- fromApp askRequest
-  updates' <- fromApp $ unpackUpdates json
-  updates <- fromApp $ checkUpdates updates'
+  (Config.Handle _ logHandle) <- liftApp getApp
+  json <- liftApp askRequest
+  updates' <- liftApp $ unpackUpdates json
+  updates <- liftApp $ checkUpdates updates'
   if HM.null updates
     then liveSession
-    else (fromApp . fromIO) (debugM logHandle "The message is received") >>
+    else (liftApp . liftIO) (debugM logHandle "The message is received") >>
          updateConfig updates json >>
-         fromApp echoMessage >>
+         liftApp echoMessage >>
          liveSession
 
 echoMessage :: App ()
@@ -42,7 +42,7 @@ echoMessage = do
         case getValue ["repeatN"] config of
           A.Number n -> valueToInteger $ A.Number n
           _ -> 1
-  fromIO $ debugM logHandle $ "Number of repetitions " <> show repeatN <> "."
+  liftIO . debugM logHandle $ "Number of repetitions " <> show repeatN <> "."
   sendMessage repeatN
 
 sendMessage :: Integer -> App ()

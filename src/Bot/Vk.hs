@@ -33,11 +33,11 @@ update response = do
 
 updateKeys :: Response -> ObjApp ()
 updateKeys response = do
-  updates <- askApp
+  updates <- askSubApp
   let ts = getValue ["ts"] response
   let userId = getValue ["object", "message", "from_id"] updates
   let localConfig = HM.fromList [("ts", ts), ("user_id", userId)]
-  fromApp . modifyConfig $ HM.union localConfig
+  liftApp . modifyConfig $ HM.union localConfig
 
 getAttachment :: [Updates] -> T.Text
 getAttachment [] = ""
@@ -58,7 +58,7 @@ getAttachment (obj:objs) =
 
 updateAttachments :: ObjApp ()
 updateAttachments = do
-  updates <- askApp
+  updates <- askSubApp
   let attachmentsObj =
         case getValue ["object", "message"] updates of
           A.Object x -> x
@@ -71,11 +71,11 @@ updateAttachments = do
               "" -> ""
               text -> T.tail text
           Nothing -> A.String ""
-  fromApp . modifyConfig $ HM.insert "attachment" attachments
+  liftApp . modifyConfig $ HM.insert "attachment" attachments
 
 getMsg :: ObjApp Message
 getMsg = do
-  updates <- askApp
+  updates <- askSubApp
   let msg =
         case getValue ["object", "message", "text"] updates of
           A.String text -> text

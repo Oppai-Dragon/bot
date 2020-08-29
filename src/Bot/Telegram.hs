@@ -28,15 +28,15 @@ update = do
 
 updateKeys :: ObjApp ()
 updateKeys = do
-  updates <- askApp
+  updates <- askSubApp
   let updateId = getValue ["update_id"] updates
   let chatId = getValue ["message", "chat", "id"] updates
   let localConfig = HM.fromList [("offset", updateId), ("chat_id", chatId)]
-  fromApp . modifyConfig $ HM.union localConfig
+  liftApp . modifyConfig $ HM.union localConfig
 
 getMsg :: ObjApp Message
 getMsg = do
-  updates <- askApp
+  updates <- askSubApp
   let msg =
         case getValue ["message", "text"] updates of
           A.String x -> x

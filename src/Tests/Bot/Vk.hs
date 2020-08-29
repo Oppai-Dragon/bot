@@ -23,7 +23,7 @@ botVkTests =
 updateTest, getAttachmentTest, getMsgTest :: Test
 updateTest =
   TestCase $
-  runApp (runRApp (update testResponseObj) testUpdatesObj) testHandle >>=
+  runApp (runSubApp (update testResponseObj) testUpdatesObj) testHandle >>=
   assertEqual
     "for (runStateT (runReaderT (update testResponseObj) testUpdatesObj) testHandle"
     ("privet", testUpdatedHandle)
@@ -35,11 +35,10 @@ getAttachmentTest =
 
 getMsgTest =
   TestCase $
-  runApp (runRApp getMsg testUpdatesObj) testHandle >>= \(a, _) ->
-    assertEqual
-      "for (runApp (runRApp getMsg testUpdatesObj) testHandle >>= \\(a,_) -> return a)"
-      "privet"
-      a
+  evalApp (runSubApp getMsg testUpdatesObj) testHandle >>=
+  assertEqual
+    "for (evalApp (runSubApp getMsg testUpdatesObj) testHandle >>= \\(a,_) -> return a)"
+    "privet"
 
 testUpdatedHandle :: Config.Handle
 testUpdatedHandle = Config.Handle testUpdatedConfig (Log.Handle "" Nothing)

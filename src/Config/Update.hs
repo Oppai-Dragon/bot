@@ -31,8 +31,8 @@ type Updates = A.Object
 
 getKeys :: A.Value -> BotApp Updates
 getKeys (A.Object obj) = do
-  bot <- askApp
-  (Config.Handle config logHandle) <- fromApp getApp
+  bot <- askSubApp
+  (Config.Handle config logHandle) <- liftApp getApp
   let field = getUnpackField "start_request" config
   let updateObj =
         case AT.parseMaybe (A..: field) obj of
@@ -40,15 +40,16 @@ getKeys (A.Object obj) = do
           Just (A.Object responseObj) -> responseObj
           _ -> HM.empty
   if HM.null updateObj
-    then (fromApp . fromIO) (warningM logHandle "Can't unpack response of request") >>
+    then (liftApp . liftIO)
+           (warningM logHandle "Can't unpack response of request") >>
          return HM.empty
     else updateObj &
          case bot of
            Bot.Vk -> Vk.getKeys
            Bot.Telegram -> Telegram.getKeys
 getKeys _ = do
-  (Config.Handle _ logHandle) <- fromApp getApp
-  fromApp . fromIO $ warningM logHandle "Empty json response"
+  (Config.Handle _ logHandle) <- liftApp getApp
+  liftApp . liftIO $ warningM logHandle "Empty json response"
   pure HM.empty
 
 getLastObj :: A.Value -> Updates
@@ -74,15 +75,15 @@ checkUpdates updates = do
 
 updateConfig :: Updates -> A.Value -> BotApp ()
 updateConfig updates (A.Object response) = do
-  bot <- askApp
+  bot <- askSubApp
   msg <-
-    fromApp $
+    liftApp $
     updates &
     case bot of
-      Bot.Vk -> runRApp (Vk.update response)
-      Bot.Telegram -> runRApp Telegram.update
-  fromApp $ updateRepeatN msg
-  fromApp $ msgHandler msg
+      Bot.Vk -> runSubApp (Vk.update response)
+      Bot.Telegram -> runSubApp Telegram.update
+  liftApp $ updateRepeatN msg
+  liftApp $ msgHandler msg
 updateConfig _ _ = return ()
 
 updateRepeatN :: Message -> App ()
@@ -119,7 +120,7 @@ msgHandler msg = do
 
 updateRandomId :: App ()
 updateRandomId = do
-  randomN <- fromIO getRandomInteger
+  randomN <- liftIO getRandomInteger
   let randomId = A.Number $ Scientific.scientific randomN 0
   modifyConfig $ HM.insert "random_id" randomId
 
