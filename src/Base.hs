@@ -20,18 +20,17 @@ module Base
  This module has functions that may be needed in any module,
 therefore the import of modules of this project is strictly prohibited.
 -}
-import qualified Control.Monad.Trans.Class as MonadClass
-import qualified Control.Monad.Trans.Reader as MonadR
-import qualified Control.Monad.Trans.State.Strict as MonadSS
-
+import Control.Monad.Trans.Class
+import Control.Monad.Trans.Reader
+import Control.Monad.Trans.State.Strict
 import qualified Data.Aeson as A
 import qualified Data.Aeson.Types as AT
 import qualified Data.List as L
 import qualified Data.Text as T
 
+import qualified Data.Time.LocalTime as LocalTime
 import qualified System.Directory as Dir
 import qualified System.Random as Random
-import qualified Data.Time.LocalTime as LocalTime
 
 parsePath :: FilePath -> FilePath
 parsePath =
@@ -63,32 +62,29 @@ getTime :: IO String
 getTime = do
   zonedTime <- LocalTime.getZonedTime
   let zonedTimeStr = show zonedTime
-  let time = L.takeWhile (/='.') . tail $ L.dropWhile (/=' ') zonedTimeStr
+  let time = L.takeWhile (/= '.') . tail $ L.dropWhile (/= ' ') zonedTimeStr
   return time
 
-fromApp ::
-     MonadClass.MonadTrans t
-  => MonadSS.StateT s IO a
-  -> t (MonadSS.StateT s IO) a
-fromApp = MonadClass.lift
+fromApp :: MonadTrans t => StateT s IO a -> t (StateT s IO) a
+fromApp = lift
 
-fromIO :: MonadClass.MonadTrans t => IO a -> t IO a
-fromIO = MonadClass.lift
+fromIO :: MonadTrans t => IO a -> t IO a
+fromIO = lift
 
-askApp :: Monad m => MonadR.ReaderT r m r
-askApp = MonadR.ask
+askApp :: Monad m => ReaderT r m r
+askApp = ask
 
-getApp :: Monad m => MonadSS.StateT s m s
-getApp = MonadSS.get
+getApp :: Monad m => StateT s m s
+getApp = get
 
-putApp :: Monad m => s -> MonadSS.StateT s m ()
-putApp = MonadSS.put
+putApp :: Monad m => s -> StateT s m ()
+putApp = put
 
-runRApp :: Monad m => MonadR.ReaderT b m a -> b -> m a
-runRApp = MonadR.runReaderT
+runRApp :: Monad m => ReaderT b m a -> b -> m a
+runRApp = runReaderT
 
-runSApp :: Monad m => MonadSS.StateT s m a -> s -> m a
-runSApp = MonadSS.evalStateT
+runSApp :: Monad m => StateT s m a -> s -> m a
+runSApp = evalStateT
 
-runApp :: Monad m => MonadSS.StateT s m a -> s -> m (a, s)
-runApp = MonadSS.runStateT
+runApp :: Monad m => StateT s m a -> s -> m (a, s)
+runApp = runStateT

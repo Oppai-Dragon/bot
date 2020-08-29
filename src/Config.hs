@@ -20,20 +20,20 @@ import qualified Data.Aeson as A
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Vector as V
 
-import qualified Control.Monad.Trans.Reader as MonadR
-import qualified Control.Monad.Trans.State.Strict as MonadSS
+import Control.Monad.Trans.Reader
+import Control.Monad.Trans.State.Strict
 
 import qualified Network.HTTP.Client as HTTPClient
 
 type Config = A.Object
 
-type App = MonadSS.StateT Config.Handle IO
+type App = StateT Config.Handle IO
 
-type BotApp = MonadR.ReaderT Bot App
+type BotApp = ReaderT Bot App
 
-type ObjApp = MonadR.ReaderT A.Object App
+type ObjApp = ReaderT A.Object App
 
-type ReqApp = MonadSS.StateT HTTPClient.Request App
+type ReqApp = StateT HTTPClient.Request App
 
 data Handle =
   Handle
