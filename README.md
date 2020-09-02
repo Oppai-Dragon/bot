@@ -6,7 +6,7 @@ This is a simple echo bot - it sends back what it received. He works in a telegr
 
 ### Step 1 - config changes
 
-#### ![src/Config.json](src/Config.json).
+#### src/Config.json.
 
 ```json
 { "bot":"Vk"
