@@ -210,18 +210,18 @@ ReaderT appears at the message processing level.
 * src/Session.hs - business logic.
 * src/Base.hs - Functions that can be used in any module.
 * src/Request.hs - requests for logic, the bot accepts 3 requests: 1 - initial, 2 - asking, 3 - responding.
-    - src/Request/Modify.hs - functions for modify request.
+    - /Modify.hs - functions for modify request.
 * src/Config.hs - Handle, App types, testConfig and testHandle.
-    - src/Config/Get.hs - Functions for getting certain values ​​from the config.
-    - src/Config/Set.hs - Setting config from Config.json and <Bot>.json.
-    - src/Config/Update.hs - Functions for changing the config..
+    - /Get.hs - Functions for getting certain values ​​from the config.
+    - /Set.hs - Setting config from Config.json and <Bot>.json.
+    - /Update.hs - Functions for changing the config..
 * src/Bot/<Bot>.hs - a certain functionality peculiar to this bot is prescribed.
 * src/Log.hs - imports all Log's module from /src/Log.
-    - src/Log/Level.hs - data type.
-    - src/Log/Console.hs - Functions for logging.
-    - src/Log/File.hs - Functions for writing logs in file.
-    - src/Log/Handle.hs - data type.
-        - src/Log/Handle/Builder.hs - For building Log.Handle
+    - /Level.hs - data type.
+    - /Console.hs - Functions for logging.
+    - /File.hs - Functions for writing logs in file.
+    - /Handle.hs - data type.
+        - /Builder.hs - For building Log.Handle
 * src/Tests.hs - a function that collects tests that are written in src/Tests.
 
 ### Adding new bots
