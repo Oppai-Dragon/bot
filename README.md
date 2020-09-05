@@ -195,7 +195,7 @@ $ stack exec bot-exe
 ```
 To stop an application launched in this way, first select the git bash window as the active one and press crtl + c.
 If you closed git bash before the application stopped, then it will continue to work until you shut it down, for example, through the task manager.
-Also after the assembly bot-exe.exe appeared, it is located in bot\\.stack-work\install\<something>\bin.
+Also after the assembly bot-exe.exe appeared, it is located in bot/.stack-work/install/<something>/bin.
 
 ## For followers
 
