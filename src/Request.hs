@@ -7,40 +7,28 @@ module Request
 import Base
 import Config
 import Config.Get
-import Log
+import Request.Exception
 import Request.Modify
 
+import Control.Monad
 import qualified Data.Aeson as A
-
 import qualified Network.HTTP.Simple as HTTPSimple
 
-startRequest :: A.FromJSON a => App a
+startRequest :: App A.Value
 startRequest = do
-  (Config.Handle config logHandle) <- getApp
+  (Config.Handle config _) <- getApp
   let request = getStartRequest config
-  liftIO $ infoM logHandle "Start Request"
-  responseJSON request
+  tryHttpJson $ HTTPSimple.httpJSON request
 
-askRequest :: A.FromJSON a => App a
+askRequest :: App A.Value
 askRequest = do
-  (Config.Handle config logHandle) <- getApp
+  (Config.Handle config _) <- getApp
   let request = getAskRequest config
-  liftIO $ debugM logHandle "Ask Request"
-  responseJSON request
+  tryHttpJson $ HTTPSimple.httpJSON request
 
 sendRequest :: App ()
 sendRequest = do
-  (Config.Handle config logHandle) <- getApp
+  (Config.Handle config _) <- getApp
   let reqDefault = getSendRequest config
   request <- evalApp modifyRequest reqDefault
-  liftIO $ debugM logHandle "Send Request"
-  _ <- liftIO $ HTTPSimple.httpBS request
-  liftIO $ infoM logHandle "Message sended"
-
-responseJSON :: A.FromJSON a => HTTPSimple.Request -> App a
-responseJSON req = do
-  (Config.Handle _ logHandle) <- getApp
-  response <- liftIO $ HTTPSimple.httpJSON req
-  liftIO $ infoM logHandle "Response getted"
-  let json = HTTPSimple.getResponseBody response
-  return json
+  void . tryHttpJson $ HTTPSimple.httpJSON request

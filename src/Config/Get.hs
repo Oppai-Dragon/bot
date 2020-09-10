@@ -23,16 +23,13 @@ import Log
 import qualified Data.Aeson as A
 import qualified Data.Aeson.Types as AT
 import qualified Data.HashMap.Strict as HM
-import qualified Data.Maybe as Maybe
+import Data.Maybe
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
 import qualified Data.Vector as V
-
 import qualified Network.HTTP.Client as HTTPClient
 
 type Field = T.Text
-
-type Fields = [Field]
 
 getStartRequest, getSendRequest, getAskRequest :: Config -> HTTPClient.Request
 getStartRequest = getRequest "start_request"
@@ -64,13 +61,19 @@ getRequestPath obj =
     A.String path -> path
     _ -> ""
 
-getRequestParams :: A.Object -> Fields
+getRequestParams :: A.Object -> [[(Field, Field)]]
 getRequestParams obj =
-  case getValue ["params"] obj of
-    A.Array vector -> map (\(A.String x) -> x) $ V.toList vector
-    _ -> []
+  let valueArr@(A.Array vector) = getValue ["params"] obj
+   in case V.toList vector of
+        A.String _:_ ->
+          map (\x -> [(x, x)]) . fromMaybe [] $
+          AT.parseMaybe A.parseJSON valueArr
+        A.Object _:_ ->
+          map (map (\(l, A.String r) -> (l, r)) . HM.toList) . fromMaybe [] $
+          AT.parseMaybe A.parseJSON valueArr
+        _ -> []
 
-buildRequest :: Field -> Fields -> Config -> HTTPClient.Request
+buildRequest :: Field -> [[(Field, Field)]] -> Config -> HTTPClient.Request
 buildRequest path params conf =
   let initRequest =
         HTTPClient.parseRequest_ . T.unpack $ parseRequestPath path conf
@@ -79,16 +82,13 @@ buildRequest path params conf =
           A.String text -> TE.encodeUtf8 text
           A.Number num ->
             TE.encodeUtf8 . T.pack . show . valueToInteger $ A.Number num
-          A.Bool bool -> TE.encodeUtf8 . T.pack . show $ bool
+          A.Bool bool -> TE.encodeUtf8 . T.pack $ show bool
           _ -> ""
-      pairs = map (\x -> (TE.encodeUtf8 x, toBS x)) params
+      pairs = map (\(l, r) -> (TE.encodeUtf8 l, toBS r)) $ concat params
       request =
         (HTTPClient.urlEncodedBody pairs initRequest)
           {HTTPClient.method = "POST"}
    in request
-
-valueToInteger :: A.Value -> Integer
-valueToInteger = Maybe.fromMaybe 0 . AT.parseMaybe A.parseJSON
 
 parseRequestPath :: Field -> Config -> Field
 parseRequestPath path conf =
@@ -99,8 +99,9 @@ parseRequestPath path conf =
         case getValue [param] conf of
           A.String text -> text
           _ -> ""
+      newPath = beforeParam <> paramValue <> afterParam
    in case T.find (== '>') path of
-        Just _ -> beforeParam <> paramValue <> afterParam
+        Just _ -> parseRequestPath newPath conf
         Nothing -> path
 
 getUnpackField :: Field -> Config -> Field

@@ -1,12 +1,12 @@
 module Config.Update
   ( getKeys
   , getLastObj
-  , checkUpdates
+  , checkUpdate
   , updateConfig
   , updateRepeatN
   , msgHandler
   , updateRandomId
-  , unpackUpdates
+  , getUpdates
   ) where
 
 import Base
@@ -62,10 +62,10 @@ getLastObj value =
             else last objArr
         Nothing -> HM.empty
 
-checkUpdates :: Updates -> App Updates
-checkUpdates updates = do
-  (Config.Handle config _) <- getApp
-  let updateIdOld = getValue ["offset"] config
+checkUpdate :: Updates -> App Updates
+checkUpdate updates = do
+  configHandle <- getApp
+  let updateIdOld = getValue ["offset"] $ hConfig configHandle
   case HM.lookup "update_id" updates of
     Just value ->
       if updateIdOld == value
@@ -73,18 +73,15 @@ checkUpdates updates = do
         else return updates
     Nothing -> return updates
 
-updateConfig :: Updates -> A.Value -> BotApp ()
-updateConfig updates (A.Object response) = do
-  bot <- askSubApp
+updateConfig :: Updates -> Bot -> App ()
+updateConfig updates bot = do
   msg <-
-    liftApp $
     updates &
     case bot of
-      Bot.Vk -> runSubApp (Vk.update response)
+      Bot.Vk -> runSubApp Vk.update
       Bot.Telegram -> runSubApp Telegram.update
-  liftApp $ updateRepeatN msg
-  liftApp $ msgHandler msg
-updateConfig _ _ = return ()
+  updateRepeatN msg
+  msgHandler msg
 
 updateRepeatN :: Message -> App ()
 updateRepeatN msg = do
@@ -124,14 +121,18 @@ updateRandomId = do
   let randomId = A.Number $ Scientific.scientific randomN 0
   modifyConfig $ HM.insert "random_id" randomId
 
-unpackUpdates :: A.Value -> App Updates
-unpackUpdates (A.Object obj) = do
-  (Config.Handle config _) <- getApp
+getUpdates :: A.Object -> BotApp [Updates]
+getUpdates json = do
+  (Config.Handle config _) <- liftApp getApp
   let field = getUnpackField "ask_request" config
-  let updateObj =
-        case AT.parseMaybe (A..: field) obj of
-          Just (A.Array vector) -> getLastObj (A.Array vector)
-          Just (A.Object responseObj) -> responseObj
-          _ -> HM.empty
-  return updateObj
-unpackUpdates _ = return HM.empty
+  let parseFunc = (=<<) A.parseJSON . (A..: field)
+  let updates =
+        case AT.parseMaybe parseFunc json :: Maybe [A.Object] of
+          Just x -> x
+          Nothing -> []
+  bot <- askSubApp
+  case bot of
+    Vk -> do
+      liftApp $ Vk.updateKeys json
+      return updates
+    Telegram -> return updates

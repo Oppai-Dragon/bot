@@ -126,12 +126,25 @@ Create this file at the specified path using the data below.
     , "got":"result"
     }
 , "send_request":
-    { "path":"https://api.telegram.org/bot<access_token>/sendMessage"
+    { "path":"https://api.telegram.org/bot<access_token>/send<method>"
     , "params":
-        [ "chat_id"
-        , "text"
+        [ { "chat_id": "chat_id" }
+        , { "text": "text" }
+        , { "document": "file_id" }
+        , { "audio": "file_id" }
+        , { "voice": "file_id" }
+        , { "sticker": "file_id" }
+        , { "animation": "file_id" }
+        , { "photo": "file_id" }
         ]
     }
+, "ignore":
+    [ "from"
+    , "chat"
+    , "message_id"
+    , "date"
+    ]
+, "method": "Message"
 , "timeout":30
 , "access_token":""
 , "keyboard":
@@ -151,13 +164,14 @@ If you have problems with the documentation, then just write this bot in a teleg
 
 1. start_request: request to start a session.
 2. path: path of request.
-3. params: params of request.
+3. params: params of request, if it's object, then field is param in request and value is param in response which needed to find this value.
 4. got: in response, they usually send json, which has a "login field".
 5. ask_request: request to get updates - messages.
 6. timeout/wait: waiting time for a response.
 7. access_token: key parameter for sending API requests.
 8. keyboard: this field contains the field that corresponds to the parameter for the API and the json object written as a string. This is the keyboard that becomes visible if you write the /repeat command to the bot. If you want to change it, check out the template at the appropriate API and you can use [this site](https://tools.knowledgewalls.com/jsontostring) to converte json to string.
 9. msgField: each API has its own message field in the json response. When creating a request, the bot looks for the required parameters in the config, so it is important to know the name of the message parameter.
+10. ignore: keys which need delete for better founding attachments in updates.
 
 ###### Optional data
 

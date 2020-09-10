@@ -9,14 +9,11 @@ module Bot.Vk
 
 import Base
 import Config
-import Config.Get
 
 import qualified Data.Aeson as A
 import qualified Data.Aeson.Types as AT
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Text as T
-
-type Response = A.Object
 
 type Updates = A.Object
 
@@ -25,19 +22,23 @@ type Message = T.Text
 getKeys :: Updates -> BotApp Updates
 getKeys = return
 
-update :: Response -> ObjApp Message
-update response = do
-  updateKeys response
+update :: ObjApp Message
+update = do
+  updateFromId
   updateAttachments
   getMsg
 
-updateKeys :: Response -> ObjApp ()
-updateKeys response = do
+updateFromId :: ObjApp ()
+updateFromId = do
   updates <- askSubApp
-  let ts = getValue ["ts"] response
   let userId = getValue ["object", "message", "from_id"] updates
-  let localConfig = HM.fromList [("ts", ts), ("user_id", userId)]
-  liftApp . modifyConfig $ HM.union localConfig
+  liftApp . modifyConfig $ HM.insert "user_id" userId
+
+updateKeys :: Updates -> App ()
+updateKeys updates =
+  let key = "ts"
+      ts = getValue [key] updates
+  in modifyConfig $ HM.insert key ts
 
 getAttachment :: [Updates] -> T.Text
 getAttachment [] = ""

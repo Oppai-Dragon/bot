@@ -9,4 +9,7 @@ data Handle =
     { hLogPath :: FilePath
     , hLogLevel :: Maybe Level
     }
-  deriving (Show, Eq)
+  deriving Show
+
+instance Eq Handle where
+  _ == _ = True

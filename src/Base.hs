@@ -2,8 +2,10 @@
 
 module Base
   ( parsePath
+  , valueToInteger
   , getRepDir
   , getValue
+  , findText
   , getRandomInteger
   , getTime
   , liftApp
@@ -27,24 +29,27 @@ import Control.Monad.Trans.Reader
 import Control.Monad.Trans.State.Strict
 import qualified Data.Aeson as A
 import qualified Data.Aeson.Types as AT
-import qualified Data.List as L
+import Data.List
+import Data.Maybe
 import qualified Data.Text as T
-
 import qualified Data.Time.LocalTime as LocalTime
 import qualified System.Directory as Dir
 import qualified System.Random as Random
 
 parsePath :: FilePath -> FilePath
 parsePath =
-  L.intercalate "\\" .
+  intercalate "\\" .
   takeWhile (/= "src") .
-  L.words .
-  L.intercalate "" .
+  words .
+  intercalate "" .
   map
     (\case
        "\\" -> " "
        x -> x) .
-  L.group
+  group
+
+valueToInteger :: A.Value -> Integer
+valueToInteger = fromMaybe 0 . AT.parseMaybe A.parseJSON
 
 getRepDir :: IO FilePath
 getRepDir = parsePath <$> Dir.getCurrentDirectory
@@ -57,6 +62,13 @@ getValue (field:rest) objOld =
     Just value -> value
     Nothing -> A.Null
 
+findText :: T.Text -> [T.Text] -> Maybe T.Text
+findText _ [] = Nothing
+findText text (textX:rest) =
+  if text == textX
+    then Just textX
+    else findText text rest
+
 getRandomInteger :: IO Integer
 getRandomInteger = Random.getStdRandom (Random.randomR (1, 100000000000))
 
@@ -64,7 +76,7 @@ getTime :: IO String
 getTime = do
   zonedTime <- LocalTime.getZonedTime
   let zonedTimeStr = show zonedTime
-  let time = L.takeWhile (/= '.') . tail $ L.dropWhile (/= ' ') zonedTimeStr
+  let time = takeWhile (/= '.') . tail $ dropWhile (/= ' ') zonedTimeStr
   return time
 
 liftApp :: MonadTrans t => StateT s IO a -> t (StateT s IO) a

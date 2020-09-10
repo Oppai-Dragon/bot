@@ -23,9 +23,9 @@ botVkTests =
 updateTest, getAttachmentTest, getMsgTest :: Test
 updateTest =
   TestCase $
-  runApp (runSubApp (update testResponseObj) testUpdatesObj) testHandle >>=
+  runApp (runSubApp update testUpdatesObj) testHandle >>=
   assertEqual
-    "for (runStateT (runReaderT (update testResponseObj) testUpdatesObj) testHandle"
+    "for (runStateT (runReaderT update testUpdatesObj) testHandle"
     ("privet", testUpdatedHandle)
 
 getAttachmentTest =
@@ -43,17 +43,12 @@ getMsgTest =
 testUpdatedHandle :: Config.Handle
 testUpdatedHandle = Config.Handle testUpdatedConfig (Log.Handle "" Nothing)
 
-testResponseObj, testUpdatedConfig, testUpdated, testUpdatesObj, attachmentsObj ::
-     A.Object
-testResponseObj =
-  HM.fromList [("updates", A.Object testUpdatesObj), ("ts", A.Number 1)]
-
+testUpdatedConfig, testUpdated, testUpdatesObj, attachmentsObj :: A.Object
 testUpdatedConfig = HM.union testUpdated testConfig
 
 testUpdated =
   HM.fromList
-    [ ("ts", A.Number 1)
-    , ("user_id", A.Number 1.74435367e8)
+    [ ("user_id", A.Number 1.74435367e8)
     , ("attachment", A.String "audio174435367_456241022")
     ]
 
