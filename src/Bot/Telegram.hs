@@ -2,6 +2,8 @@ module Bot.Telegram
   ( getKeys
   , update
   , updateKeys
+  , updateMethod
+  , handleAttachment
   , getMsg
   ) where
 
@@ -45,35 +47,34 @@ updateKeys = do
 updateMethod :: ObjApp ()
 updateMethod = do
   updates <- askSubApp
-  (Config.Handle config logHandle) <- liftApp getApp
+  (Config.Handle config _) <- liftApp getApp
   let ignoredArr =
         fromMaybe [] . AT.parseMaybe A.parseJSON $ getValue ["ignore"] config :: [T.Text]
   let messageObj = fromObj $ getValue ["message"] updates
-  let restUpdates = deleteIgnore ignoredArr messageObj
-  let attachHandle attach =
-        liftApp $ do
-          liftIO . infoM logHandle $ "Telegram attachments: " <> show attach
-          let method = (toUpper . T.head) attach `T.cons` T.tail attach
-          let fileId = getValue [attach, "file_id"] restUpdates
-          liftIO . infoM logHandle $
-            "method - send" <> T.unpack method <> ", file_id - " <> show fileId
-          let localConfig =
-                HM.fromList [("method", A.String method), ("file_id", fileId)]
-          modifyConfig $ HM.union localConfig
+  let restUpdates = deleteKeys ignoredArr messageObj
+  let
   case getValue ["text"] messageObj of
     A.String _ ->
       liftApp . modifyConfig . HM.insert "method" $ A.String "Message"
     _ ->
       case HM.keys restUpdates of
-        [x] -> attachHandle x
+        [x] -> liftApp $ handleAttachment x restUpdates
         arr ->
           case findText "document" arr of
-            Just x -> attachHandle x
+            Just x -> liftApp $ handleAttachment x restUpdates
             Nothing -> return ()
 
-deleteIgnore :: [T.Text] -> Updates -> Updates
-deleteIgnore [] = id
-deleteIgnore (field:rest) = HM.delete field . deleteIgnore rest
+handleAttachment :: T.Text -> Updates -> App ()
+handleAttachment attachment updates = do
+  (Config.Handle _ logHandle) <- getApp
+  liftIO . infoM logHandle $ "Telegram attachments: " <> T.unpack attachment
+  let method = (toUpper . T.head) attachment `T.cons` T.tail attachment
+  let fileId = getValue [attachment, "file_id"] updates
+  liftIO . infoM logHandle $
+    "method - send" <> T.unpack method <> ", file_id - " <> show fileId
+  let localConfig =
+        HM.fromList [("method", A.String method), ("file_id", fileId)]
+  modifyConfig $ HM.union localConfig
 
 getMsg :: ObjApp Message
 getMsg = do
@@ -84,9 +85,3 @@ getMsg = do
           A.String x -> x
           _ -> ""
   return msg
-
-fromObj :: A.Value -> A.Object
-fromObj value =
-  case value of
-    A.Object x -> x
-    _ -> HM.empty

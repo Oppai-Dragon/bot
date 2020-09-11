@@ -215,16 +215,24 @@ Also after the assembly bot-exe.exe appeared, it is located in bot/.stack-work/i
 
 ### Architecture
 
-Basically it is StateT Config IO (). Since the config has to be changed in accordance with each message.
+Basically it is StateT Config.Handle IO (). Since the config has to be changed in accordance with each message.
 
 ReaderT appears at the message processing level.
 
 ### Modules
 
 * src/Session.hs - business logic.
-* src/Base.hs - Functions that can be used in any module.
+* src/Base.hs - Functions that can be used in any module. For greater convenience, the functions are divided into modules in src/Data/Base/ and all are imported into Base.hs.
+    - /Aeson.hs - Functions with Value from aeson package.
+    - /Interface.hs - ask, get and other functions from Control.Monad ... that are needed to work with the architecture. It is better to change the names for a clearer use. For example, ask is used for UnderApp, which is ReaderT Config IO, so it's clearer to call it askUnderApp.
+    - /Lift.hs - lift functions which i rename for better understanding.
+    - /Path.hs - Functions for parsing FilePath.
+    - /Random.hs - Functions that give random values.
+    - /Text.hs - Functions for Text from package text.
+    - /Time.hs - Functions that require import from package time.
 * src/Request.hs - requests for logic, the bot accepts 3 requests: 1 - initial, 2 - asking, 3 - responding.
     - /Modify.hs - functions for modify request.
+    - /Exception.hs - functions for handling exception of request.
 * src/Config.hs - Handle, App types, testConfig and testHandle.
     - /Get.hs - Functions for getting certain values ​​from the config.
     - /Set.hs - Setting config from Config.json and <Bot>.json.

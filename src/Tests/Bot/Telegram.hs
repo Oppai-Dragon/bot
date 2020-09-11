@@ -20,38 +20,98 @@ botTelegramTests =
   , TestLabel "getMsgTest" getMsgTest
   ]
 
-getKeysTest, updateTest, getMsgTest :: Test
+getKeysTest, updateTest, getMsgTest ::
+     Test
 getKeysTest =
   TestCase $
-  evalApp (runSubApp (getKeys testUpdatesObj) Telegram) testHandle >>=
+  evalApp (runSubApp (getKeys testUpdatesTextObj) Telegram) testHandle >>=
   assertEqual
-    "for (evalApp (runSubApp (getKeys testUpdatesObj) Telegram) testHandle >>= \\(a, _) -> return a)"
+    "for (evalApp (runSubApp (getKeys testUpdatesTextObj) Telegram) testHandle >>= \\(a, _) -> return a)"
     (HM.singleton "chat_id" (A.Number 1))
 
 updateTest =
   TestCase $
-  runApp (runSubApp update testUpdatesObj) testHandle >>=
+  runApp (runSubApp update testUpdatesDocumentObj) testHandle >>=
   assertEqual
-    "for (runApp (runSubApp update testUpdatesObj) testHandle)"
-    ("suka", testUpdatedHandle)
+    "for (runApp (runSubApp update testUpdatesDocumentObj) testHandle)"
+    ("", testUpdatedHandle)
 
 getMsgTest =
   TestCase $
-  evalApp (runSubApp getMsg testUpdatesObj) testHandle >>=
+  evalApp (runSubApp getMsg testUpdatesTextObj) testHandle >>=
   assertEqual
-    "for (evalApp (runSubApp getMsg testUpdatesObj) testHandle)"
+    "for (evalApp (runSubApp getMsg testUpdatesTextObj) testHandle)"
     "suka"
 
 testUpdatedHandle :: Config.Handle
 testUpdatedHandle = Config.Handle testUpdatedConfig (Log.Handle "" Nothing)
 
-testUpdatedConfig, testUpdated, testUpdatesObj :: A.Object
+testUpdatedConfig, testUpdated, testUpdatesDocumentObj, testUpdatesTextObj ::
+     A.Object
 testUpdatedConfig = HM.union testUpdated testConfig
 
 testUpdated =
-  HM.fromList [("offset", A.Number 6.26040329e8), ("chat_id", A.Number 1)]
+  HM.fromList
+    [ ("offset", A.Number 6.26040329e8)
+    , ("chat_id", A.Number 1.09778397e9)
+    , ("method", A.String "Document")
+    , ( "file_id"
+      , A.String
+          "BQACAgIAAxkBAAICUV9ZJD1sYB1qKT8Y_IX5-_G8i4RqAAJRCgAC0-7JSuwAAZkJvTsUvRsE")
+    ]
 
-testUpdatesObj =
+testUpdatesDocumentObj =
+  HM.fromList
+    [ ("update_id", A.Number 6.26040329e8)
+    , ( "message"
+      , A.Object
+          (HM.fromList
+             [ ( "from"
+               , A.Object
+                   (HM.fromList
+                      [ ("first_name", A.String "Misha")
+                      , ("is_bot", A.Bool False)
+                      , ("last_name", A.String "Dragon")
+                      , ("id", A.Number 1.09778397e9)
+                      , ("language_code", A.String "ru")
+                      ]))
+             , ( "chat"
+               , A.Object
+                   (HM.fromList
+                      [ ("first_name", A.String "Misha")
+                      , ("last_name", A.String "Dragon")
+                      , ("id", A.Number 1.09778397e9)
+                      , ("type", A.String "private")
+                      ]))
+             , ("message_id", A.Number 593.0)
+             , ("date", A.Number 1.599677501e9)
+             , ( "document"
+               , A.Object
+                   (HM.fromList
+                      [ ( "file_id"
+                        , A.String
+                            "BQACAgIAAxkBAAICUV9ZJD1sYB1qKT8Y_IX5-_G8i4RqAAJRCgAC0-7JSuwAAZkJvTsUvRsE")
+                      , ("mime_type", A.String "image/jpeg")
+                      , ( "thumb"
+                        , A.Object
+                            (HM.fromList
+                               [ ( "file_id"
+                                 , A.String
+                                     "AAMCAgADGQEAAgJRX1kkPWxgHWopPxj8hfn78byLhGoAAlEKAALT7slK7AABmQm9OxS9vFV_ly4AAwEAB20AA2dxAAIbBA")
+                               , ("height", A.Number 209.0)
+                               , ("width", A.Number 220.0)
+                               , ("file_size", A.Number 20867.0)
+                               , ( "file_unique_id"
+                                 , A.String "AQADvFV_ly4AA2dxAAI")
+                               ]))
+                      , ("file_size", A.Number 31399.0)
+                      , ("file_unique_id", A.String "AgADUQoAAtPuyUo")
+                      , ("file_name", A.String "220px-Pet_Hamster.jpg")
+                      ]))
+             ]))
+    ]
+
+testUpdatesTextObj =
   HM.fromList
     [ ("update_id", A.Number 6.26040329e8)
     , ( "message"
