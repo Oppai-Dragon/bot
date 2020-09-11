@@ -20,6 +20,7 @@ import Log
 import qualified Data.Aeson as A
 import qualified Data.Aeson.Types as AT
 import Data.Function
+import Data.Maybe
 import qualified Data.Scientific as Scientific
 
 import qualified Data.HashMap.Strict as HM
@@ -126,10 +127,7 @@ getUpdates json = do
   (Config.Handle config _) <- liftApp getApp
   let field = getUnpackField "ask_request" config
   let parseFunc = (=<<) A.parseJSON . (A..: field)
-  let updates =
-        case AT.parseMaybe parseFunc json :: Maybe [A.Object] of
-          Just x -> x
-          Nothing -> []
+  let updates = fromMaybe [] (AT.parseMaybe parseFunc json :: Maybe [A.Object])
   bot <- askSubApp
   case bot of
     Vk -> do

@@ -23,7 +23,6 @@ import Log
 import qualified Data.Aeson as A
 import qualified Data.Aeson.Types as AT
 import qualified Data.HashMap.Strict as HM
-import Data.Maybe
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
 import qualified Data.Vector as V
@@ -50,26 +49,19 @@ getRequest nameReq conf =
         else HTTPClient.defaultRequest
 
 getRequestObj :: Field -> Config -> A.Object
-getRequestObj field conf =
-  case getValue [field] conf of
-    A.Object obj -> obj
-    _ -> HM.empty
+getRequestObj field = fromObj . getValue [field]
 
 getRequestPath :: A.Object -> Field
-getRequestPath obj =
-  case getValue ["path"] obj of
-    A.String path -> path
-    _ -> ""
+getRequestPath = fromString . getValue ["path"]
 
 getRequestParams :: A.Object -> [[(Field, Field)]]
 getRequestParams obj =
   let valueArr@(A.Array vector) = getValue ["params"] obj
    in case V.toList vector of
         A.String _:_ ->
-          map (\x -> [(x, x)]) . fromMaybe [] $
-          AT.parseMaybe A.parseJSON valueArr
+          maybe [] (map (\x -> [(x, x)])) $ AT.parseMaybe A.parseJSON valueArr
         A.Object _:_ ->
-          map (map (\(l, A.String r) -> (l, r)) . HM.toList) . fromMaybe [] $
+          maybe [] (map (map (\(l, A.String r) -> (l, r)) . HM.toList)) $
           AT.parseMaybe A.parseJSON valueArr
         _ -> []
 
