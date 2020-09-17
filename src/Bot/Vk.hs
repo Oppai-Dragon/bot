@@ -14,6 +14,7 @@ import Log
 import qualified Data.Aeson as A
 import qualified Data.Aeson.Types as AT
 import qualified Data.HashMap.Strict as HM
+import Data.Maybe
 import qualified Data.Text as T
 
 type Updates = A.Object
@@ -28,16 +29,9 @@ update = do
   (Config.Handle _ logHandle) <- liftApp getApp
   updates <- askSubApp
   liftApp . liftIO . infoM logHandle $ "Updates vk: " <> show updates
-  updateFromId
   updatePeerId
   updateAttachments
   getMsg
-
-updateFromId :: ObjApp ()
-updateFromId = do
-  updates <- askSubApp
-  let userId = getValue ["object", "message", "from_id"] updates
-  liftApp . modifyConfig $ HM.insert "user_id" userId
 
 updatePeerId :: ObjApp ()
 updatePeerId = do
@@ -67,18 +61,27 @@ getAttachment (obj:objs) =
 
 updateAttachments :: ObjApp ()
 updateAttachments = do
-  (Config.Handle _ logHandle)<- liftApp getApp
+  (Config.Handle _ logHandle) <- liftApp getApp
   updates <- askSubApp
   let attachmentsObj = fromObj $ getValue ["object", "message"] updates
+  let attachmentsObjArr =
+        fromMaybe
+          []
+          (AT.parseMaybe (A..: "attachments") attachmentsObj :: Maybe [A.Object])
   let attachments =
-        case AT.parseMaybe (A..: "attachments") attachmentsObj :: Maybe [A.Object] of
-          Just objArr ->
-            A.String $
-            case getAttachment objArr of
-              "" -> ""
-              text -> T.tail text
-          Nothing -> A.String ""
-  liftApp . liftIO . debugM logHandle $ "Vk attachments: " <> (\(A.String x) -> T.unpack x) attachments
+        A.String $
+        if null attachmentsObjArr
+          then ""
+          else case getAttachment attachmentsObjArr of
+                 "" -> ""
+                 text -> T.tail text
+  let stickerId =
+        if null attachmentsObjArr
+          then A.Null
+          else getValue ["sticker", "sticker_id"] $ head attachmentsObjArr
+  liftApp . liftIO . debugM logHandle $
+    "Vk attachments: " <> (\(A.String x) -> T.unpack x) attachments
+  liftApp . modifyConfig $ HM.insert "sticker_id" stickerId
   liftApp . modifyConfig $ HM.insert "attachment" attachments
 
 getMsg :: ObjApp Message

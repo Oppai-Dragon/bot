@@ -4,6 +4,7 @@ module Config.Update
   , checkUpdate
   , updateConfig
   , updateRepeatN
+  , parseMessage
   , msgHandler
   , updateRandomId
   , getUpdates
@@ -22,6 +23,7 @@ import qualified Data.Aeson.Types as AT
 import Data.Function
 import Data.Maybe
 import qualified Data.Scientific as Scientific
+import qualified Text.Parsec as P
 
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Text as T
@@ -77,6 +79,7 @@ checkUpdate updates = do
 updateConfig :: Updates -> Bot -> App ()
 updateConfig updates bot = do
   msg <-
+    (=<<) parseMessage $
     updates &
     case bot of
       Bot.Vk -> runSubApp Vk.update
@@ -99,6 +102,24 @@ updateRepeatN msg = do
               else 1
           _ -> oldRepeatN
   modifyConfig $ HM.insert "repeatN" repeatN
+
+parseMessage :: Message -> App Message
+parseMessage msg = do
+  (Config.Handle _ logHandle) <- getApp
+  let parseFunc = do
+        _ <- P.char '['
+        name1 <- P.many $ P.letter P.<|> P.digit
+        _ <- P.char '|'
+        _ <- P.string $ "@" <> name1
+        _ <- P.char ']'
+        _ <- P.space
+        str <- P.many1 P.anyChar
+        return str :: P.Parsec String String String
+  case P.runParser (P.try parseFunc P.<|> P.many P.anyChar) "" "" (T.unpack msg) of
+    Left err -> do
+      liftIO . warningM logHandle $ show err
+      return ""
+    Right x -> return $ T.pack x
 
 msgHandler :: Message -> App ()
 msgHandler msg = do

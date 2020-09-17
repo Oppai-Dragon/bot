@@ -1,6 +1,9 @@
 module Request.Modify
   ( modifyRequest
+  , isNeedKeyboard
+  , isNeedSticker
   , addKeyboard
+  , addSticker
   ) where
 
 import Base
@@ -9,6 +12,7 @@ import Config.Get
 import Log
 
 import qualified Data.Aeson as A
+import qualified Data.ByteString.Char8 as BS
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Text.Encoding as TE
 
@@ -19,15 +23,21 @@ import qualified Network.HTTP.Simple as HTTPSimple
 modifyRequest :: ReqApp HTTPSimple.Request
 modifyRequest = do
   addKeyboard
+  addSticker
   getApp
 
-isNeedKeyboard :: Config -> Bool
+isNeedKeyboard, isNeedSticker :: Config -> Bool
 isNeedKeyboard conf =
   case HM.lookup "lastMsg" conf of
-    Just "/repeat" -> True
+    Just (A.String "/repeat") -> True
     _ -> False
 
-addKeyboard :: ReqApp ()
+isNeedSticker conf =
+  case HM.lookup "sticker_id" conf of
+    Just (A.Number _) -> True
+    _ -> False
+
+addKeyboard, addSticker :: ReqApp ()
 addKeyboard = do
   req <- getApp
   (Config.Handle config logHandle) <- liftApp getApp
@@ -39,3 +49,14 @@ addKeyboard = do
           [(TE.encodeUtf8 keybField, Just $ TE.encodeUtf8 keybValue)]
           req
       _ -> req
+
+addSticker = do
+  req <- getApp
+  (Config.Handle config logHandle) <- liftApp getApp
+  let stickerId = valueToInteger $ getValue ["sticker_id"] config
+  let stickerIdBS = BS.pack $ show stickerId
+  when (isNeedSticker config) $
+    (>>) (liftApp . liftIO $ debugM logHandle "Add sticker") . putApp $
+    (HTTPSimple.setRequestPath "/method/messages.sendSticker" .
+     HTTPSimple.addToRequestQueryString [("sticker_id", Just stickerIdBS)])
+      req

@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 16f7120813691d5ae52dd13fb9782e84f0b6c1be97f9955ceccba42fbc110f8c
+-- hash: 454a1e2ff6edbd678a92c5b1772b1e232575b2997ac54e10d6b341dd14f7d1d9
 
 name:           bot
 version:        0.1.0.0
@@ -58,6 +58,8 @@ library
       Tests.Bot.Vk
       Tests.Config
       Tests.Config.Get
+      Tests.Config.Update
+      Tests.Request.Modify
   other-modules:
       Paths_bot
   hs-source-dirs:
@@ -72,6 +74,7 @@ library
     , directory
     , http-client
     , http-conduit
+    , parsec
     , random
     , scientific
     , text
@@ -98,6 +101,7 @@ executable bot-exe
     , directory
     , http-client
     , http-conduit
+    , parsec
     , random
     , scientific
     , text
@@ -125,6 +129,7 @@ test-suite bot-test
     , directory
     , http-client
     , http-conduit
+    , parsec
     , random
     , scientific
     , text

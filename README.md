@@ -61,8 +61,7 @@ Create this file at the specified path using the data below.
 , "send_request":
     { "path":"https://api.vk.com/method/messages.send"
     , "params":
-        [ "user_id"
-        , "random_id"
+        [ "random_id"
         , "peer_id"
         , "message"
         , "attachment"
@@ -183,17 +182,6 @@ And after successfully assembling. This way you will do a little check.
 $ stack test
 ```
 If problems arise at this or subsequent stages. I left my contacts it the end README.
-
-### Step 3 - explanation of work
-
-#### Vk
-
-The logic of the beginning of correspondence is this: since the bot writes to the user on behalf of the community, the user must allow this community to send messages to him. After the user writes a message to the general community conversation that you created in the first step, the bot will send you an answer to the new correspondence that he created for you. Now you can chat with him using the new correspondence. To change the bot that you want to run, just change its name in MyConfig.json.
-![HelpWithNotification](images/helpWithNotification.png)
-
-#### Telegram
-
-For telegrams of the bot, after starting the bot with the command below. You just need to write to the bot. To find it, you need to use the name you gave it when you created it.
 
 ## Run
 

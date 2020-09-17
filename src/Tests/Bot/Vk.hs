@@ -48,8 +48,9 @@ testUpdatedConfig = HM.union testUpdated testConfig
 
 testUpdated =
   HM.fromList
-    [ ("user_id", A.Number 1.74435367e8)
-    , ("attachment", A.String "audio174435367_456241022")
+    [ ("attachment", A.String "audio174435367_456241022")
+    , ("peer_id", A.Number 1.74435367e8)
+    , ("sticker_id", A.Null)
     ]
 
 testUpdatesObj =

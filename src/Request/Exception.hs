@@ -16,7 +16,6 @@ tryHttpJson responseM = do
   responseEither <- liftIO $ tryM responseM
   case responseEither of
     Right response -> do
-      liftIO $ debugM logHandle "Response getted"
       let json = HTTPSimple.getResponseBody response
       return json
     Left err -> do
