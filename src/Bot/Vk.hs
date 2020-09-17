@@ -9,6 +9,7 @@ module Bot.Vk
 
 import Base
 import Config
+import Log
 
 import qualified Data.Aeson as A
 import qualified Data.Aeson.Types as AT
@@ -24,7 +25,11 @@ getKeys = return
 
 update :: ObjApp Message
 update = do
+  (Config.Handle _ logHandle) <- liftApp getApp
+  updates <- askSubApp
+  liftApp . liftIO . infoM logHandle $ "Updates vk: " <> show updates
   updateFromId
+  updatePeerId
   updateAttachments
   getMsg
 
@@ -34,36 +39,37 @@ updateFromId = do
   let userId = getValue ["object", "message", "from_id"] updates
   liftApp . modifyConfig $ HM.insert "user_id" userId
 
+updatePeerId :: ObjApp ()
+updatePeerId = do
+  updates <- askSubApp
+  let userId = getValue ["object", "message", "peer_id"] updates
+  liftApp . modifyConfig $ HM.insert "peer_id" userId
+
 updateKeys :: Updates -> App ()
 updateKeys updates =
   let key = "ts"
       ts = getValue [key] updates
-  in modifyConfig $ HM.insert key ts
+   in modifyConfig $ HM.insert key ts
 
 getAttachment :: [Updates] -> T.Text
 getAttachment [] = ""
 getAttachment (obj:objs) =
-  let typeName =
-        case getValue ["type"] obj of
-          A.String x -> x
-          _ -> ""
+  let typeName = fromString $ getValue ["type"] obj
       ownerIdText =
         T.pack . show . valueToInteger $ getValue [typeName, "owner_id"] obj
       objIdText = T.pack . show . valueToInteger $ getValue [typeName, "id"] obj
       accessKey =
-        case getValue [typeName, "access_key"] obj of
-          A.String text -> "_" <> text
-          _ -> ""
+        case fromString $ getValue [typeName, "access_key"] obj of
+          "" -> ""
+          text -> "_" <> text
       attachment = typeName <> ownerIdText <> "_" <> objIdText <> accessKey
    in "," <> attachment <> getAttachment objs
 
 updateAttachments :: ObjApp ()
 updateAttachments = do
+  (Config.Handle _ logHandle)<- liftApp getApp
   updates <- askSubApp
-  let attachmentsObj =
-        case getValue ["object", "message"] updates of
-          A.Object x -> x
-          _ -> HM.empty
+  let attachmentsObj = fromObj $ getValue ["object", "message"] updates
   let attachments =
         case AT.parseMaybe (A..: "attachments") attachmentsObj :: Maybe [A.Object] of
           Just objArr ->
@@ -72,13 +78,11 @@ updateAttachments = do
               "" -> ""
               text -> T.tail text
           Nothing -> A.String ""
+  liftApp . liftIO . debugM logHandle $ "Vk attachments: " <> (\(A.String x) -> T.unpack x) attachments
   liftApp . modifyConfig $ HM.insert "attachment" attachments
 
 getMsg :: ObjApp Message
 getMsg = do
   updates <- askSubApp
-  let msg =
-        case getValue ["object", "message", "text"] updates of
-          A.String text -> text
-          _ -> ""
+  let msg = fromString $ getValue ["object", "message", "text"] updates
   return msg

@@ -78,7 +78,6 @@ Create this file at the specified path using the data below.
 , "keyboard":
     { "keyboard":"{\"one_time\":true,\"buttons\":[[{\"action\":{\"type\":\"text\",\"payload\":\"{\\\"button\\\": \\\"1\\\"}\",\"label\":\"1\"},\"color\":\"primary\"},{\"action\":{\"type\":\"text\",\"payload\":\"{\\\"button\\\": \\\"1\\\"}\",\"label\":\"2\"},\"color\":\"primary\"},{\"action\":{\"type\":\"text\",\"payload\":\"{\\\"button\\\": \\\"1\\\"}\",\"label\":\"3\"},\"color\":\"primary\"},{\"action\":{\"type\":\"text\",\"payload\":\"{\\\"button\\\": \\\"1\\\"}\",\"label\":\"4\"},\"color\":\"primary\"},{\"action\":{\"type\":\"text\",\"payload\":\"{\\\"button\\\": \\\"1\\\"}\",\"label\":\"5\"},\"color\":\"primary\"}]]}"
     }
-, "peer_id":
 , "group_id":
 , "v":"5.103"
 }
@@ -96,12 +95,7 @@ To work VK bot you must have 3 fields correctly filled in: access_token, peer_id
      - Copy it and paste between double quotes in MyConfig.json, as the value of the access_token field. Remember to activate the LongPoll API and synchronize the version of the API with the "v" field in MyConfig.json. For everything to work correctly, put "API version: 5.103". Since it was everything that was created on it.
      - It is also very important which events are activated - the server will respond to your json request with event information. Since this is an echo bot, activate only "Message received".
 ![HelperAccessToken](images/helpWithAccessToken.png)
-2. peer_id: this is an equally important parameter, the identifier of the conversation.
-   - Bots need community permission to send messages. And his conversation.
-   - Then create a chat. And enter it by clicking on the icon.
-   - After they entered the chat, a number appeared in the address bar. We only need a number. In my example, this is the number 101. It needs to be entered between double quotes as the value of the peer_id field.
-![Helperpeer_id](images/helpWithPeerId.png)
-3. group_id: This is the easiest, go to your community and there will be a number in the address bar.
+2. group_id: This is the easiest, go to your community and there will be a number in the address bar.
 ![HelperWithgroup_id](images/helpWithGroupId.PNG)
 
 #### Telegram Bot

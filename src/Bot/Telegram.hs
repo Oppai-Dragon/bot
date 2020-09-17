@@ -52,7 +52,6 @@ updateMethod = do
         fromMaybe [] . AT.parseMaybe A.parseJSON $ getValue ["ignore"] config :: [T.Text]
   let messageObj = fromObj $ getValue ["message"] updates
   let restUpdates = deleteKeys ignoredArr messageObj
-  let
   case getValue ["text"] messageObj of
     A.String _ ->
       liftApp . modifyConfig . HM.insert "method" $ A.String "Message"
@@ -74,6 +73,7 @@ handleAttachment attachment updates = do
     "method - send" <> T.unpack method <> ", file_id - " <> show fileId
   let localConfig =
         HM.fromList [("method", A.String method), ("file_id", fileId)]
+  liftIO . debugM logHandle $ "Telegram method is : send" <> T.unpack method
   modifyConfig $ HM.union localConfig
 
 getMsg :: ObjApp Message

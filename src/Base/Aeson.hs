@@ -19,16 +19,10 @@ valueToInteger :: A.Value -> Integer
 valueToInteger = fromMaybe 0 . AT.parseMaybe A.parseJSON
 
 fromString :: A.Value -> T.Text
-fromString value =
-  case value of
-    A.String x -> x
-    _ -> ""
+fromString = fromMaybe "" . AT.parseMaybe A.parseJSON
 
 fromObj :: A.Value -> A.Object
-fromObj value =
-  case value of
-    A.Object x -> x
-    _ -> HM.empty
+fromObj = fromMaybe HM.empty . AT.parseMaybe A.parseJSON
 
 deleteKeys :: Keys -> A.Object -> A.Object
 deleteKeys = foldr ((.) . HM.delete) id

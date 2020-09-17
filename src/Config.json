@@ -1,7 +1,7 @@
-{ "bot":"Telegram"
+{ "bot":"Vk"
 , "repeatN":1
 , "repeatMsg":"At the moment, I repeat what you said times. Press the button with the number, with the desired number of repetitions."
 , "helpMsg":"Hey. I am a simple echo-bot - I write back what they wrote to me. If you want to change how many times I reply to one of your messages, then write /repeat "
-, "logLevel":"info"
+, "logLevel":"debug"
 , "test":"test"
 }
