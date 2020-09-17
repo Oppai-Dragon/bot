@@ -56,7 +56,9 @@ addSticker = do
   let stickerId = valueToInteger $ getValue ["sticker_id"] config
   let stickerIdBS = BS.pack $ show stickerId
   when (isNeedSticker config) $
-    (>>) (liftApp . liftIO $ debugM logHandle "Add sticker") . putApp $
+    (>>)
+      (liftApp . liftIO . debugM logHandle $ "Add sticker: " <> show stickerId) .
+    putApp $
     (HTTPSimple.setRequestPath "/method/messages.sendSticker" .
      HTTPSimple.addToRequestQueryString [("sticker_id", Just stickerIdBS)])
       req
