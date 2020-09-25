@@ -1,8 +1,10 @@
 module Base.Aeson
   ( valueToInteger
-  , fromObj
   , fromString
+  , fromObject
+  , fromArrString
   , deleteKeys
+  , findObject
   , getValue
   ) where
 
@@ -13,21 +15,33 @@ import qualified Data.Text as T
 
 import Data.Maybe
 
-type Keys = [T.Text]
+type Field = T.Text
+
+type Keys = [Field]
 
 valueToInteger :: A.Value -> Integer
 valueToInteger = fromMaybe 0 . AT.parseMaybe A.parseJSON
 
-fromString :: A.Value -> T.Text
+fromString :: A.Value -> Field
 fromString = fromMaybe "" . AT.parseMaybe A.parseJSON
 
-fromObj :: A.Value -> A.Object
-fromObj = fromMaybe HM.empty . AT.parseMaybe A.parseJSON
+fromObject :: A.Value -> A.Object
+fromObject = fromMaybe HM.empty . AT.parseMaybe A.parseJSON
+
+fromArrString :: A.Value -> [Field]
+fromArrString = fromMaybe [] . AT.parseMaybe A.parseJSON
 
 deleteKeys :: Keys -> A.Object -> A.Object
 deleteKeys = foldr ((.) . HM.delete) id
 
-getValue :: [T.Text] -> A.Object -> A.Value
+findObject :: Keys -> A.Object -> Maybe (Field, A.Object)
+findObject [] _ = Nothing
+findObject (keyX:rest) obj =
+  case getValue [keyX] obj of
+    A.Object x -> Just (keyX, x)
+    _ -> findObject rest obj
+
+getValue :: Keys -> A.Object -> A.Value
 getValue [] obj = A.Object obj
 getValue (field:rest) objOld =
   case AT.parseMaybe (A..: field) objOld of

@@ -3,7 +3,8 @@ module Request.Modify
   , isNeedKeyboard
   , isNeedSticker
   , addKeyboard
-  , addSticker
+  , addVkSticker
+  , addTelegramAttachment
   ) where
 
 import Base
@@ -14,6 +15,7 @@ import Log
 import qualified Data.Aeson as A
 import qualified Data.ByteString.Char8 as BS
 import qualified Data.HashMap.Strict as HM
+import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
 
 import Control.Monad
@@ -23,7 +25,8 @@ import qualified Network.HTTP.Simple as HTTPSimple
 modifyRequest :: ReqApp HTTPSimple.Request
 modifyRequest = do
   addKeyboard
-  addSticker
+  addVkSticker
+  addTelegramAttachment
   getApp
 
 isNeedKeyboard, isNeedSticker :: Config -> Bool
@@ -37,7 +40,7 @@ isNeedSticker conf =
     Just (A.Number _) -> True
     _ -> False
 
-addKeyboard, addSticker :: ReqApp ()
+addKeyboard, addVkSticker, addTelegramAttachment :: ReqApp ()
 addKeyboard = do
   req <- getApp
   (Config.Handle config logHandle) <- liftApp getApp
@@ -50,7 +53,7 @@ addKeyboard = do
           req
       _ -> req
 
-addSticker = do
+addVkSticker = do
   req <- getApp
   (Config.Handle config logHandle) <- liftApp getApp
   let stickerId = valueToInteger $ getValue ["sticker_id"] config
@@ -62,3 +65,17 @@ addSticker = do
     (HTTPSimple.setRequestPath "/method/messages.sendSticker" .
      HTTPSimple.addToRequestQueryString [("sticker_id", Just stickerIdBS)])
       req
+
+addTelegramAttachment = do
+  req <- getApp
+  configHandle <- liftApp getApp
+  let config = hConfig configHandle
+  case fromString $ getValue ["method"] config of
+    "Message" -> return ()
+    attachment' -> do
+      let fileId = fromString $ getValue ["file_id"] config
+      let attachment = TE.encodeUtf8 $ T.toLower attachment'
+      putApp $
+        HTTPSimple.addToRequestQueryString
+          [(attachment, Just $ TE.encodeUtf8 fileId)]
+          req

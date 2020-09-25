@@ -63,7 +63,7 @@ updateAttachments :: ObjApp ()
 updateAttachments = do
   (Config.Handle _ logHandle) <- liftApp getApp
   updates <- askSubApp
-  let attachmentsObj = fromObj $ getValue ["object", "message"] updates
+  let attachmentsObj = fromObject $ getValue ["object", "message"] updates
   let attachmentsObjArr =
         fromMaybe
           []

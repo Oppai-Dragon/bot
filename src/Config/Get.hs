@@ -49,7 +49,7 @@ getRequest nameReq conf =
         else HTTPClient.defaultRequest
 
 getRequestObj :: Field -> Config -> A.Object
-getRequestObj field = fromObj . getValue [field]
+getRequestObj field = fromObject . getValue [field]
 
 getRequestPath :: A.Object -> Field
 getRequestPath = fromString . getValue ["path"]

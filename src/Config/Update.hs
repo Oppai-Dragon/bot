@@ -128,13 +128,12 @@ msgHandler msg = do
         case getValue ["msgField"] config of
           A.String x -> x
           _ -> ""
-  let msgObj =
-        HM.singleton msgField $
+  let msgResult =
         case msg of
           "/help" -> getValue ["helpMsg"] config
           "/repeat" -> getRepeatMsg config
           _ -> A.String msg
-  let localConfig = HM.singleton "lastMsg" (A.String msg) `HM.union` msgObj
+  let localConfig = HM.fromList [("lastMsg",A.String msg), (msgField,msgResult)]
   modifyConfig $ HM.union localConfig
 
 updateRandomId :: App ()

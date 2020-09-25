@@ -12,10 +12,8 @@ import Config
 import Log
 
 import qualified Data.Aeson as A
-import qualified Data.Aeson.Types as AT
 import Data.Char
 import qualified Data.HashMap.Strict as HM
-import Data.Maybe
 import qualified Data.Text as T
 
 type Message = T.Text
@@ -48,27 +46,22 @@ updateMethod :: ObjApp ()
 updateMethod = do
   updates <- askSubApp
   (Config.Handle config _) <- liftApp getApp
-  let ignoredArr =
-        fromMaybe [] . AT.parseMaybe A.parseJSON $ getValue ["ignore"] config :: [T.Text]
-  let messageObj = fromObj $ getValue ["message"] updates
-  let restUpdates = deleteKeys ignoredArr messageObj
+  let attachmentArr = fromArrString $ getValue ["attachments"] config
+  let messageObj = fromObject $ getValue ["message"] updates
   case getValue ["text"] messageObj of
     A.String _ ->
       liftApp . modifyConfig . HM.insert "method" $ A.String "Message"
     _ ->
-      case HM.keys restUpdates of
-        [x] -> liftApp $ handleAttachment x restUpdates
-        arr ->
-          case findText "document" arr of
-            Just x -> liftApp $ handleAttachment x restUpdates
-            Nothing -> return ()
+      case findObject attachmentArr messageObj of
+        Just (attachment, obj) -> liftApp $ handleAttachment attachment obj
+        Nothing -> return ()
 
-handleAttachment :: T.Text -> Updates -> App ()
-handleAttachment attachment updates = do
+handleAttachment :: T.Text -> A.Object -> App ()
+handleAttachment attachment attachmentObj = do
   (Config.Handle _ logHandle) <- getApp
   liftIO . infoM logHandle $ "Telegram attachments: " <> T.unpack attachment
   let method = (toUpper . T.head) attachment `T.cons` T.tail attachment
-  let fileId = getValue [attachment, "file_id"] updates
+  let fileId = getValue ["file_id"] attachmentObj
   liftIO . infoM logHandle $
     "method - send" <> T.unpack method <> ", file_id - " <> show fileId
   let localConfig =
@@ -79,7 +72,7 @@ handleAttachment attachment updates = do
 getMsg :: ObjApp Message
 getMsg = do
   updates <- askSubApp
-  let messageObj = fromObj $ getValue ["message"] updates
+  let messageObj = fromObject $ getValue ["message"] updates
   let msg =
         case getValue ["text"] messageObj of
           A.String x -> x
