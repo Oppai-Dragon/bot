@@ -3,6 +3,7 @@ module Base.Aeson
   , valueToInteger
   , fromString
   , fromObject
+  , fromArr
   , fromArrString
   , fromArrObject
   , deleteKeys
@@ -14,9 +15,9 @@ module Base.Aeson
 import qualified Data.Aeson as A
 import qualified Data.Aeson.Types as AT
 import qualified Data.HashMap.Strict as HM
-import qualified Data.Text as T
-
 import Data.Maybe
+import qualified Data.Text as T
+import qualified Data.Vector as V
 
 type Field = T.Text
 
@@ -35,6 +36,9 @@ fromString = fromMaybe "" . AT.parseMaybe A.parseJSON
 fromObject :: A.Value -> A.Object
 fromObject = fromMaybe HM.empty . AT.parseMaybe A.parseJSON
 
+fromArr :: A.Value -> [A.Value]
+fromArr = fromMaybe [] . AT.parseMaybe A.parseJSON
+
 fromArrString :: A.Value -> [Field]
 fromArrString = fromMaybe [] . AT.parseMaybe A.parseJSON
 
@@ -45,8 +49,14 @@ deleteKeys :: Keys -> A.Object -> A.Object
 deleteKeys = foldr ((.) . HM.delete) id
 
 insertWithPush :: Field -> A.Value -> A.Object -> A.Object
-insertWithPush =
-  HM.insertWith (\new old -> A.String $ fromString old <> fromString new)
+insertWithPush field value obj =
+  let pushFunc new oldValue =
+        case oldValue of
+          A.String old -> A.String $ old <> fromString new
+          A.Array old -> A.Array . V.fromList $ V.toList old <> fromArr new
+          A.Object old -> A.Object $ old `HM.union` fromObject new
+          _ -> A.Null
+   in HM.insertWith pushFunc field value obj
 
 findObject :: Keys -> A.Object -> Maybe (Field, A.Object)
 findObject [] _ = Nothing

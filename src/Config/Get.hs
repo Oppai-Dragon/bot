@@ -2,7 +2,11 @@ module Config.Get
   ( getStartRequest
   , getAskRequest
   , getSendRequest
+  , getPhotosGetUploadServer
+  , getPhotosSave
+  , getPhotosGet
   , getRequest
+  , getApiRequest
   , getRequestObj
   , getRequestPath
   , getRequestParams
@@ -20,24 +24,28 @@ import Log
 
 import Control.Monad
 import qualified Data.Aeson as A
-import qualified Data.Aeson.Types as AT
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
-import qualified Data.Vector as V
 import qualified Network.HTTP.Client as HTTPClient
 
 type Field = T.Text
 
 type Method = T.Text
 
-getStartRequest, getSendRequest, getAskRequest ::
+getStartRequest, getSendRequest, getAskRequest, getPhotosGetUploadServer, getPhotosSave, getPhotosGet ::
      Config.Handle -> IO HTTPClient.Request
 getStartRequest = getRequest "start_request"
 
 getAskRequest = getRequest "ask_request"
 
 getSendRequest = getRequest "send_request"
+
+getPhotosGetUploadServer = getApiRequest "photos.getUploadServer"
+
+getPhotosSave = getApiRequest "photos.save"
+
+getPhotosGet = getApiRequest "photos.get"
 
 getRequest :: Field -> Config.Handle -> IO HTTPClient.Request
 getRequest nameReq Config.Handle { hConfig = config
@@ -69,8 +77,37 @@ getRequest nameReq Config.Handle { hConfig = config
             T.unpack nameReq <> "\": ...} in " <> show bot <> ".json"
           return HTTPClient.defaultRequest
 
-getApiRequest :: Method -> Config -> HTTPClient.Request
-getApiRequest apiMethod conf = undefined
+getApiRequest :: Method -> Config.Handle -> IO HTTPClient.Request
+getApiRequest apiMethod Config.Handle { hConfig = config
+                                      , hLog = logHandle
+                                      , hBot = bot
+                                      } =
+  let apiRequestObj = getRequestObj apiMethod config
+      methodParamArr = getValue ["api_methods", apiMethod] config
+      requestObj = insertWithPush "params" methodParamArr apiRequestObj
+      requestPath = getRequestPath apiRequestObj <> apiMethod
+      requestParams = getRequestParams requestObj
+      requestObjBool = HM.null requestObj
+      requestPathBool = T.null requestPath
+      requestParamsBool = null requestParams
+      isRequestCollected =
+        all not [requestObjBool, requestPathBool, requestParamsBool]
+   in if isRequestCollected
+        then return $ buildRequest requestPath requestParams config
+        else do
+          errorM
+            logHandle
+            "Request isn't collected, will be used default request from http-client"
+          when requestObjBool . warningM logHandle $
+            "Can't find " <>
+            T.unpack apiMethod <> " object in " <> show bot <> ".json"
+          when requestPathBool . warningM logHandle $
+            "Can't find field \"path\" in { \"" <>
+            T.unpack apiMethod <> "\": ...} in " <> show bot <> ".json"
+          when requestParamsBool . warningM logHandle $
+            "Can't find field \"params\" in { \"" <>
+            T.unpack apiMethod <> "\": ...} in " <> show bot <> ".json"
+          return HTTPClient.defaultRequest
 
 getRequestObj :: Field -> Config -> A.Object
 getRequestObj field = fromObject . getValue [field]
@@ -101,8 +138,6 @@ buildRequest path params conf =
         (HTTPClient.urlEncodedBody pairs initRequest)
           {HTTPClient.method = "POST"}
    in request
-
-buildApiRequest
 
 parseRequestPath :: Field -> Config -> Field
 parseRequestPath path conf =

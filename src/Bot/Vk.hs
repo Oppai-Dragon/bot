@@ -87,6 +87,7 @@ handleAttachments (attachmentObj:rest) = do
     "photo" -> handlePhoto attachmentObj
     "doc" -> handleDoc attachmentObj
     _ -> handleAnyAttachment attachmentObj
+  handleAttachments rest
 
 handleSticker, handlePhoto, handleDoc :: Attachment -> App ()
 handleSticker attachmentObj =
@@ -95,10 +96,15 @@ handleSticker attachmentObj =
       value = getValue [typeName, field] attachmentObj
   in modifyConfig (HM.insert "attachment" (A.String typeName) . HM.insert field value)
 
-handlePhoto = do
+handlePhoto attachmentObj = do
+  configHandle <- getApp
+  let sizesValue = getValue ["photo","sizes"] attachmentObj
+  getPhotosRequest <- liftIO $ httpJSON =<< getPhotosGet configHandle
+
 
 handleDoc = undefined
 handleAnyAttachment :: T.Text -> Attachment -> App ()
+handleAnyAttachment = undefined
 
 getMsg :: ObjApp Message
 getMsg = do
