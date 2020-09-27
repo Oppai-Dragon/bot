@@ -36,14 +36,14 @@ isNeedKeyboard conf =
     _ -> False
 
 isNeedSticker conf =
-  case HM.lookup "sticker_id" conf of
-    Just (A.Number _) -> True
+  case HM.lookup "attachment" conf of
+    Just (A.String "sticker") -> True
     _ -> False
 
 addKeyboard, addVkSticker, addTelegramAttachment :: ReqApp ()
 addKeyboard = do
   req <- getApp
-  (Config.Handle config logHandle) <- liftApp getApp
+  Config.Handle {hConfig = config, hLog = logHandle} <- liftApp getApp
   when (isNeedKeyboard config) $
     (>>) (liftApp . liftIO $ debugM logHandle "Add keyboard") . putApp $
     case getKeyboard config of
@@ -55,21 +55,17 @@ addKeyboard = do
 
 addVkSticker = do
   req <- getApp
-  (Config.Handle config logHandle) <- liftApp getApp
+  Config.Handle {hConfig = config} <- liftApp getApp
   let stickerId = valueToInteger $ getValue ["sticker_id"] config
   let stickerIdBS = BS.pack $ show stickerId
-  when (isNeedSticker config) $
-    (>>)
-      (liftApp . liftIO . debugM logHandle $ "Add sticker: " <> show stickerId) .
-    putApp $
+  when (isNeedSticker config) . putApp $
     (HTTPSimple.setRequestPath "/method/messages.sendSticker" .
      HTTPSimple.addToRequestQueryString [("sticker_id", Just stickerIdBS)])
       req
 
 addTelegramAttachment = do
   req <- getApp
-  configHandle <- liftApp getApp
-  let config = hConfig configHandle
+  Config.Handle {hConfig = config} <- liftApp getApp
   case fromString $ getValue ["method"] config of
     "Message" -> return ()
     attachment' -> do

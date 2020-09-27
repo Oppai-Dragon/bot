@@ -1,9 +1,12 @@
 module Base.Aeson
-  ( valueToInteger
+  ( isArray
+  , valueToInteger
   , fromString
   , fromObject
   , fromArrString
+  , fromArrObject
   , deleteKeys
+  , insertWithPush
   , findObject
   , getValue
   ) where
@@ -19,6 +22,10 @@ type Field = T.Text
 
 type Keys = [Field]
 
+isArray :: A.Value -> Bool
+isArray (A.Array _) = True
+isArray _ = False
+
 valueToInteger :: A.Value -> Integer
 valueToInteger = fromMaybe 0 . AT.parseMaybe A.parseJSON
 
@@ -31,8 +38,15 @@ fromObject = fromMaybe HM.empty . AT.parseMaybe A.parseJSON
 fromArrString :: A.Value -> [Field]
 fromArrString = fromMaybe [] . AT.parseMaybe A.parseJSON
 
+fromArrObject :: A.Value -> [A.Object]
+fromArrObject = fromMaybe [] . AT.parseMaybe A.parseJSON
+
 deleteKeys :: Keys -> A.Object -> A.Object
 deleteKeys = foldr ((.) . HM.delete) id
+
+insertWithPush :: Field -> A.Value -> A.Object -> A.Object
+insertWithPush =
+  HM.insertWith (\new old -> A.String $ fromString old <> fromString new)
 
 findObject :: Keys -> A.Object -> Maybe (Field, A.Object)
 findObject [] _ = Nothing

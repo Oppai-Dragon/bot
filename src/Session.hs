@@ -16,45 +16,43 @@ type Updates = A.Object
 
 runBot :: App ()
 runBot = do
-  handle@(Config.Handle _ logHandle) <- getApp
-  bot <- liftIO $ getBot handle
+  Config.Handle {hLog = logHandle, hBot = bot} <- getApp
   liftIO $ infoM logHandle $ show bot <> " bot is selected."
   json <- startRequest
-  localConfig <- runSubApp (getKeys json) bot
+  localConfig <- getKeys json
   modifyConfig $ HM.union localConfig
-  runSubApp liveSession bot
+  liveSession
   liftIO $ endM logHandle
 
-liveSession :: BotApp ()
+liveSession :: App ()
 liveSession = do
-  (Config.Handle _ logHandle) <- liftApp getApp
-  json <- liftApp askRequest
+  Config.Handle {hLog = logHandle} <- getApp
+  json <- askRequest
   updates <-
     case json of
       A.Object x -> getUpdates x
       _ -> do
-        liftApp . liftIO $ warningM logHandle "Getted json isn't an object"
+        liftIO $ warningM logHandle "Getted json isn't an object"
         return []
   if null updates
     then liveSession
     else echoMessage updates >> liveSession
 
-echoMessage :: [Updates] -> BotApp ()
+echoMessage :: [Updates] -> App ()
 echoMessage (updates:rest) = do
-  updates' <- liftApp $ checkUpdate updates
+  updates' <- checkUpdate updates
+  Config.Handle {hConfig = config, hLog = logHandle, hBot = bot} <- getApp
   if HM.null updates'
     then echoMessage rest
     else do
-      bot <- askSubApp
-      liftApp $ updateConfig updates bot
-      (Config.Handle config logHandle) <- liftApp getApp
+      updateConfig updates bot
       let repeatN =
             case getValue ["repeatN"] config of
               A.Number n -> valueToInteger $ A.Number n
               _ -> 1
-      liftApp . liftIO . debugM logHandle $
+      liftIO . debugM logHandle $
         "Number of repetitions " <> show repeatN <> "."
-      liftApp $ sendMessage repeatN
+      sendMessage repeatN
       echoMessage rest
 echoMessage _ = return ()
 

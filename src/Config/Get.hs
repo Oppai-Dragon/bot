@@ -12,14 +12,13 @@ module Config.Get
   , getUnpackField
   , getKeyboard
   , getRepeatMsg
-  , getBot
   ) where
 
 import Base
-import Bot
 import Config
 import Log
 
+import Control.Monad
 import qualified Data.Aeson as A
 import qualified Data.Aeson.Types as AT
 import qualified Data.HashMap.Strict as HM
@@ -30,23 +29,48 @@ import qualified Network.HTTP.Client as HTTPClient
 
 type Field = T.Text
 
-getStartRequest, getSendRequest, getAskRequest :: Config -> HTTPClient.Request
+type Method = T.Text
+
+getStartRequest, getSendRequest, getAskRequest ::
+     Config.Handle -> IO HTTPClient.Request
 getStartRequest = getRequest "start_request"
 
 getAskRequest = getRequest "ask_request"
 
 getSendRequest = getRequest "send_request"
 
-getRequest :: Field -> Config -> HTTPClient.Request
-getRequest nameReq conf =
-  let requestObj = getRequestObj nameReq conf
+getRequest :: Field -> Config.Handle -> IO HTTPClient.Request
+getRequest nameReq Config.Handle { hConfig = config
+                                 , hLog = logHandle
+                                 , hBot = bot
+                                 } =
+  let requestObj = getRequestObj nameReq config
       requestPath = getRequestPath requestObj
       requestParams = getRequestParams requestObj
+      requestObjBool = HM.null requestObj
+      requestPathBool = T.null requestPath
+      requestParamsBool = null requestParams
       isRequestCollected =
-        all not [HM.null requestObj, T.null requestPath, null requestParams]
+        all not [requestObjBool, requestPathBool, requestParamsBool]
    in if isRequestCollected
-        then buildRequest requestPath requestParams conf
-        else HTTPClient.defaultRequest
+        then return $ buildRequest requestPath requestParams config
+        else do
+          errorM
+            logHandle
+            "Request isn't collected, will be used default request from http-client"
+          when requestObjBool . warningM logHandle $
+            "Can't find " <>
+            T.unpack nameReq <> " object in " <> show bot <> ".json"
+          when requestPathBool . warningM logHandle $
+            "Can't find field \"path\" in { \"" <>
+            T.unpack nameReq <> "\": ...} in " <> show bot <> ".json"
+          when requestParamsBool . warningM logHandle $
+            "Can't find field \"params\" in { \"" <>
+            T.unpack nameReq <> "\": ...} in " <> show bot <> ".json"
+          return HTTPClient.defaultRequest
+
+getApiRequest :: Method -> Config -> HTTPClient.Request
+getApiRequest apiMethod conf = undefined
 
 getRequestObj :: Field -> Config -> A.Object
 getRequestObj field = fromObject . getValue [field]
@@ -54,33 +78,31 @@ getRequestObj field = fromObject . getValue [field]
 getRequestPath :: A.Object -> Field
 getRequestPath = fromString . getValue ["path"]
 
-getRequestParams :: A.Object -> [[(Field, Field)]]
+getRequestParams :: A.Object -> [(Field, Field)]
 getRequestParams obj =
-  let valueArr@(A.Array vector) = getValue ["params"] obj
-   in case V.toList vector of
-        A.String _:_ ->
-          maybe [] (map (\x -> [(x, x)])) $ AT.parseMaybe A.parseJSON valueArr
-        A.Object _:_ ->
-          maybe [] (map (map (\(l, A.String r) -> (l, r)) . HM.toList)) $
-          AT.parseMaybe A.parseJSON valueArr
-        _ -> []
+  let value = getValue ["params"] obj
+   in if isArray value
+        then map (\x -> (x, x)) $ fromArrString value
+        else []
 
-buildRequest :: Field -> [[(Field, Field)]] -> Config -> HTTPClient.Request
+buildRequest :: Field -> [(Field, Field)] -> Config -> HTTPClient.Request
 buildRequest path params conf =
   let initRequest =
         HTTPClient.parseRequest_ . T.unpack $ parseRequestPath path conf
-      toBS field =
+      findAndConvert field =
         case getValue [field] conf of
           A.String text -> TE.encodeUtf8 text
           A.Number num ->
             TE.encodeUtf8 . T.pack . show . valueToInteger $ A.Number num
           A.Bool bool -> TE.encodeUtf8 . T.pack $ show bool
           _ -> ""
-      pairs = map (\(l, r) -> (TE.encodeUtf8 l, toBS r)) $ concat params
+      pairs = map (\(l, r) -> (TE.encodeUtf8 l, findAndConvert r)) params
       request =
         (HTTPClient.urlEncodedBody pairs initRequest)
           {HTTPClient.method = "POST"}
    in request
+
+buildApiRequest
 
 parseRequestPath :: Field -> Config -> Field
 parseRequestPath path conf =
@@ -121,15 +143,3 @@ getRepeatMsg conf =
              then "said " <> repeatNText
              else x) $
       T.words repeatMsg
-
-getBot :: Config.Handle -> IO Bot
-getBot (Config.Handle conf logHandle) = do
-  let maybeBot = AT.parseMaybe (\x -> x A..: "bot" >>= A.parseJSON) conf
-  case maybeBot of
-    Just bot -> infoM logHandle "Bot is readable" >> return bot
-    Nothing ->
-      errorM
-        logHandle
-        "Can't read bot name, check his name in Config.json with name in Bot.hs" >>
-      infoM logHandle "Will use Vk implementation" >>
-      return Vk

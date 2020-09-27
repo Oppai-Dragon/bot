@@ -12,7 +12,7 @@ import qualified Network.HTTP.Simple as HTTPSimple
 
 tryHttpJson :: HasCallStack => IO (HTTPSimple.Response A.Value) -> App A.Value
 tryHttpJson responseM = do
-  (Config.Handle _ logHandle) <- getApp
+  Config.Handle {hLog = logHandle} <- getApp
   responseEither <- liftIO $ tryM responseM
   case responseEither of
     Right response -> do

@@ -32,10 +32,9 @@ type Message = T.Text
 
 type Updates = A.Object
 
-getKeys :: A.Value -> BotApp Updates
+getKeys :: A.Value -> App Updates
 getKeys (A.Object obj) = do
-  bot <- askSubApp
-  (Config.Handle config logHandle) <- liftApp getApp
+  Config.Handle {hConfig = config, hLog = logHandle, hBot = bot} <- getApp
   let field = getUnpackField "start_request" config
   let updateObj =
         case AT.parseMaybe (A..: field) obj of
@@ -43,16 +42,16 @@ getKeys (A.Object obj) = do
           Just (A.Object responseObj) -> responseObj
           _ -> HM.empty
   if HM.null updateObj
-    then (liftApp . liftIO)
-           (warningM logHandle "Can't unpack response of request") >>
-         return HM.empty
+    then do
+      liftIO $
+        warningM logHandle "Can't unpack response of request" return HM.empty
     else updateObj &
          case bot of
            Bot.Vk -> Vk.getKeys
            Bot.Telegram -> Telegram.getKeys
 getKeys _ = do
-  (Config.Handle _ logHandle) <- liftApp getApp
-  liftApp . liftIO $ warningM logHandle "Empty json response"
+  Config.Handle {hLog = logHandle} <- getApp
+  liftIO $ warningM logHandle "Empty json response"
   pure HM.empty
 
 getLastObj :: A.Value -> Updates
@@ -89,7 +88,7 @@ updateConfig updates bot = do
 
 updateRepeatN :: Message -> App ()
 updateRepeatN msg = do
-  (Config.Handle config _) <- getApp
+  Config.Handle {hConfig = config} <- getApp
   let lastMsg = getValue ["lastMsg"] config
   let msgStr = T.unpack msg
   let oldRepeatN = getValue ["repeatN"] config
@@ -105,7 +104,7 @@ updateRepeatN msg = do
 
 parseMessage :: Message -> App Message
 parseMessage msg = do
-  (Config.Handle _ logHandle) <- getApp
+  Config.Handle {hLog = logHandle} <- getApp
   let parseFunc = do
         _ <- P.char '['
         name1 <- P.many $ P.letter P.<|> P.digit
@@ -123,7 +122,7 @@ parseMessage msg = do
 
 msgHandler :: Message -> App ()
 msgHandler msg = do
-  (Config.Handle config _) <- getApp
+  Config.Handle {hConfig = config} <- getApp
   let msgField =
         case getValue ["msgField"] config of
           A.String x -> x
@@ -133,7 +132,8 @@ msgHandler msg = do
           "/help" -> getValue ["helpMsg"] config
           "/repeat" -> getRepeatMsg config
           _ -> A.String msg
-  let localConfig = HM.fromList [("lastMsg",A.String msg), (msgField,msgResult)]
+  let localConfig =
+        HM.fromList [("lastMsg", A.String msg), (msgField, msgResult)]
   modifyConfig $ HM.union localConfig
 
 updateRandomId :: App ()
@@ -142,15 +142,13 @@ updateRandomId = do
   let randomId = A.Number $ Scientific.scientific randomN 0
   modifyConfig $ HM.insert "random_id" randomId
 
-getUpdates :: A.Object -> BotApp [Updates]
+getUpdates :: A.Object -> App [Updates]
 getUpdates json = do
-  (Config.Handle config _) <- liftApp getApp
+  Config.Handle {hConfig = config, hBot = bot} <- getApp
   let field = getUnpackField "ask_request" config
-  let parseFunc = (=<<) A.parseJSON . (A..: field)
-  let updates = fromMaybe [] (AT.parseMaybe parseFunc json :: Maybe [A.Object])
-  bot <- askSubApp
+  let updates = fromArrObject $ getValue [field] json
   case bot of
     Vk -> do
-      liftApp $ Vk.updateKeys json
+      Vk.updateKeys json
       return updates
     Telegram -> return updates

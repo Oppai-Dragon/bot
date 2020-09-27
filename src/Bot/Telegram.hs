@@ -20,14 +20,14 @@ type Message = T.Text
 
 type Updates = A.Object
 
-getKeys :: Updates -> BotApp Updates
+getKeys :: Updates -> App Updates
 getKeys obj =
   let chatId = getValue ["message", "chat", "id"] obj
    in return $ HM.fromList [("chat_id", chatId)]
 
 update :: ObjApp Message
 update = do
-  (Config.Handle _ logHandle) <- liftApp getApp
+  Config.Handle {hLog = logHandle} <- liftApp getApp
   updates <- askSubApp
   liftApp . liftIO . infoM logHandle $ "Updates telegram: " <> show updates
   updateKeys
@@ -45,7 +45,7 @@ updateKeys = do
 updateMethod :: ObjApp ()
 updateMethod = do
   updates <- askSubApp
-  (Config.Handle config _) <- liftApp getApp
+  Config.Handle {hConfig = config} <- liftApp getApp
   let attachmentArr = fromArrString $ getValue ["attachments"] config
   let messageObj = fromObject $ getValue ["message"] updates
   case getValue ["text"] messageObj of
@@ -58,7 +58,7 @@ updateMethod = do
 
 handleAttachment :: T.Text -> A.Object -> App ()
 handleAttachment attachment attachmentObj = do
-  (Config.Handle _ logHandle) <- getApp
+  Config.Handle {hLog = logHandle} <- getApp
   liftIO . infoM logHandle $ "Telegram attachments: " <> T.unpack attachment
   let method = (toUpper . T.head) attachment `T.cons` T.tail attachment
   let fileId = getValue ["file_id"] attachmentObj

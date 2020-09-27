@@ -16,19 +16,19 @@ import qualified Network.HTTP.Simple as HTTPSimple
 
 startRequest :: App A.Value
 startRequest = do
-  (Config.Handle config _) <- getApp
-  let request = getStartRequest config
+  configHandle <- getApp
+  request <- liftIO $ getStartRequest configHandle
   tryHttpJson $ HTTPSimple.httpJSON request
 
 askRequest :: App A.Value
 askRequest = do
-  (Config.Handle config _) <- getApp
-  let request = getAskRequest config
+  configHandle <- getApp
+  request <- liftIO $ getAskRequest configHandle
   tryHttpJson $ HTTPSimple.httpJSON request
 
 sendRequest :: App ()
 sendRequest = do
-  (Config.Handle config _) <- getApp
-  let reqDefault = getSendRequest config
+  configHandle <- getApp
+  reqDefault <- liftIO $ getSendRequest configHandle
   request <- evalApp modifyRequest reqDefault
   void . tryHttpJson $ HTTPSimple.httpJSON request
