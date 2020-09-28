@@ -20,13 +20,12 @@ botTelegramTests =
   , TestLabel "getMsgTest" getMsgTest
   ]
 
-getKeysTest, updateTest, getMsgTest ::
-     Test
+getKeysTest, updateTest, getMsgTest :: Test
 getKeysTest =
   TestCase $
-  evalApp (runSubApp (getKeys testUpdatesTextObj) Telegram) testHandle >>=
+  evalApp (getKeys testUpdatesTextObj) testHandle >>=
   assertEqual
-    "for (evalApp (runSubApp (getKeys testUpdatesTextObj) Telegram) testHandle >>= \\(a, _) -> return a)"
+    "for (evalApp (getKeys testUpdatesTextObj) testHandle)"
     (HM.singleton "chat_id" (A.Number 1))
 
 updateTest =
@@ -44,7 +43,9 @@ getMsgTest =
     "suka"
 
 testUpdatedHandle :: Config.Handle
-testUpdatedHandle = Config.Handle testUpdatedConfig (Log.Handle "" Nothing)
+testUpdatedHandle =
+  Config.Handle
+    {hConfig = testUpdatedConfig, hLog = Log.Handle "" Nothing, hBot = Telegram}
 
 testUpdatedConfig, testUpdated, testUpdatesDocumentObj, testUpdatesTextObj ::
      A.Object

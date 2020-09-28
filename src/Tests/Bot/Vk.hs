@@ -3,6 +3,7 @@ module Tests.Bot.Vk
   ) where
 
 import Base
+import Bot
 import Bot.Vk
 import Config
 import Log
@@ -25,23 +26,27 @@ updateTest =
   TestCase $
   runApp (runSubApp update testUpdatesObj) testHandle >>=
   assertEqual
-    "for (runStateT (runReaderT update testUpdatesObj) testHandle"
+    "for (runApp (runSubApp update testUpdatesObj) testHandle)"
     ("privet", testUpdatedHandle)
 
-getAttachmentTest =
-  TestCase $
-  assertEqual "for (getAttachment [attachmentsObj])" ",audio174435367_456241022" $
-  getAttachment [attachmentsObj]
+getAttachmentTest = undefined
+  --TestCase $
+  --evalApp (getAttachment "" attachmentsObj) testHandle >>=
+  --assertEqual
+  --  "for (getAttachment \"\" attachmentsObj)"
+  --  ",audio174435367_456241022"
 
 getMsgTest =
   TestCase $
   evalApp (runSubApp getMsg testUpdatesObj) testHandle >>=
   assertEqual
-    "for (evalApp (runSubApp getMsg testUpdatesObj) testHandle >>= \\(a,_) -> return a)"
+    "for (evalApp (runSubApp getMsg testUpdatesObj) testHandle)"
     "privet"
 
 testUpdatedHandle :: Config.Handle
-testUpdatedHandle = Config.Handle testUpdatedConfig (Log.Handle "" Nothing)
+testUpdatedHandle =
+  Config.Handle
+    {hConfig = testUpdatedConfig, hLog = Log.Handle "" Nothing, hBot = Vk}
 
 testUpdatedConfig, testUpdated, testUpdatesObj, attachmentsObj :: A.Object
 testUpdatedConfig = HM.union testUpdated testConfig

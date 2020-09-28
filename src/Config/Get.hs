@@ -2,9 +2,9 @@ module Config.Get
   ( getStartRequest
   , getAskRequest
   , getSendRequest
-  , getPhotosGetUploadServer
-  , getPhotosSave
-  , getPhotosGet
+  , getPhotosGetUploadServerReq
+  , getPhotosSaveReq
+  , getPhotosGetReq
   , getRequest
   , getApiRequest
   , getRequestObj
@@ -33,7 +33,7 @@ type Field = T.Text
 
 type Method = T.Text
 
-getStartRequest, getSendRequest, getAskRequest, getPhotosGetUploadServer, getPhotosSave, getPhotosGet ::
+getStartRequest, getSendRequest, getAskRequest, getPhotosGetUploadServerReq, getPhotosSaveReq, getPhotosGetReq ::
      Config.Handle -> IO HTTPClient.Request
 getStartRequest = getRequest "start_request"
 
@@ -41,11 +41,11 @@ getAskRequest = getRequest "ask_request"
 
 getSendRequest = getRequest "send_request"
 
-getPhotosGetUploadServer = getApiRequest "photos.getUploadServer"
+getPhotosGetUploadServerReq = getApiRequest "photos.getUploadServer"
 
-getPhotosSave = getApiRequest "photos.save"
+getPhotosSaveReq = getApiRequest "photos.save"
 
-getPhotosGet = getApiRequest "photos.get"
+getPhotosGetReq = getApiRequest "photos.get"
 
 getRequest :: Field -> Config.Handle -> IO HTTPClient.Request
 getRequest nameReq Config.Handle { hConfig = config

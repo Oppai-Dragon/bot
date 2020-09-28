@@ -4,7 +4,6 @@ module Session
 
 import Base
 import Config
-import Config.Get
 import Config.Update
 import Log
 import Request

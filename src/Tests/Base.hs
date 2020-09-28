@@ -13,9 +13,10 @@ baseTests :: [Test]
 baseTests =
   [ TestLabel "parsePathTest" parsePathTest
   , TestLabel "getValueTest" getValueTest
+  , TestLabel "wordsByTest" wordsByTest
   ]
 
-parsePathTest, getValueTest :: Test
+parsePathTest, getValueTest, wordsByTest :: Test
 parsePathTest =
   TestCase $
   assertEqual "for (parsePath \"E:\\users\\get\\src\")" "E:\\users\\get" $
@@ -25,3 +26,7 @@ getValueTest =
   TestCase $
   assertEqual "for (getValue [\"repeatN\"] testConfig)" (A.Number 1) $
   getValue ["repeatN"] testConfig
+
+wordsByTest =
+  TestCase $
+  assertEqual "for (wordsBy (\'.\'/=) \"kek.wew\")" ["kek","wew"] $ wordsBy ('.'/=) "kek.wew"

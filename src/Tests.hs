@@ -6,7 +6,6 @@ import Log
 import Tests.Base
 import Tests.Bot.Telegram
 import Tests.Bot.Vk
-import Tests.Config
 import Tests.Config.Get
 import Tests.Request.Modify
 
@@ -17,4 +16,4 @@ runTest = do
   logHandle <- new
   infoM logHandle "TESTS-------------------------------------"
   runTestTT . TestList $
-    botVkTests <> botTelegramTests <> baseTests <> configTests <> configGetTests <> requestModifyTests
+    botVkTests <> botTelegramTests <> baseTests <> configGetTests <> requestModifyTests

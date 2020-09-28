@@ -12,14 +12,12 @@ import Config
 import Config.Get
 import Log
 
+import Control.Monad
 import qualified Data.Aeson as A
 import qualified Data.ByteString.Char8 as BS
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
-
-import Control.Monad
-
 import qualified Network.HTTP.Simple as HTTPSimple
 
 modifyRequest :: ReqApp HTTPSimple.Request

@@ -2,6 +2,7 @@ module Base.Aeson
   ( isArray
   , valueToInteger
   , fromString
+  , fromNumber
   , fromObject
   , fromArr
   , fromArrString
@@ -16,6 +17,7 @@ import qualified Data.Aeson as A
 import qualified Data.Aeson.Types as AT
 import qualified Data.HashMap.Strict as HM
 import Data.Maybe
+import qualified Data.Scientific as S
 import qualified Data.Text as T
 import qualified Data.Vector as V
 
@@ -32,6 +34,9 @@ valueToInteger = fromMaybe 0 . AT.parseMaybe A.parseJSON
 
 fromString :: A.Value -> Field
 fromString = fromMaybe "" . AT.parseMaybe A.parseJSON
+
+fromNumber :: A.Value -> S.Scientific
+fromNumber = fromMaybe 0 . AT.parseMaybe A.parseJSON
 
 fromObject :: A.Value -> A.Object
 fromObject = fromMaybe HM.empty . AT.parseMaybe A.parseJSON
@@ -52,9 +57,10 @@ insertWithPush :: Field -> A.Value -> A.Object -> A.Object
 insertWithPush field value obj =
   let pushFunc new oldValue =
         case oldValue of
-          A.String old -> A.String $ old <> fromString new
+          A.String old -> A.String $ old <> "," <> fromString new
           A.Array old -> A.Array . V.fromList $ V.toList old <> fromArr new
           A.Object old -> A.Object $ old `HM.union` fromObject new
+          A.Number old -> A.Number $ old + fromNumber new
           _ -> A.Null
    in HM.insertWith pushFunc field value obj
 

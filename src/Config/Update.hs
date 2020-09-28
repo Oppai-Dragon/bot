@@ -21,7 +21,6 @@ import Log
 import qualified Data.Aeson as A
 import qualified Data.Aeson.Types as AT
 import Data.Function
-import Data.Maybe
 import qualified Data.Scientific as Scientific
 import qualified Text.Parsec as P
 
@@ -43,8 +42,8 @@ getKeys (A.Object obj) = do
           _ -> HM.empty
   if HM.null updateObj
     then do
-      liftIO $
-        warningM logHandle "Can't unpack response of request" return HM.empty
+      liftIO $ warningM logHandle "Can't unpack response of request"
+      return HM.empty
     else updateObj &
          case bot of
            Bot.Vk -> Vk.getKeys
