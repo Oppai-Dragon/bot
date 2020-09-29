@@ -45,9 +45,10 @@ echoMessage (updates:rest) = do
     then echoMessage rest
     else do
       updateConfig updates bot
+      let repeatValue = getValue ["repeatN"] config
       let repeatN =
-            case getValue ["repeatN"] config of
-              A.Number n -> valueToInteger $ A.Number n
+            case repeatValue of
+              A.Number _ -> Base.toInteger repeatValue
               _ -> 1
       liftIO . debugM logHandle $
         "Number of repetitions " <> show repeatN <> "."

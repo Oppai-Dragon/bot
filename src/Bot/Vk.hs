@@ -2,8 +2,10 @@ module Bot.Vk
   ( getKeys
   , update
   , updateKeys
-  , getAttachment
+  , updateAttachment
   , updateAttachments
+  , handleSticker
+  , uploadPhotosServer
   , getMsg
   ) where
 
@@ -14,9 +16,7 @@ import Log
 import Request.Exception
 
 import qualified Data.Aeson as A
-
-import Control.Monad
---import qualified Data.ByteString as BS
+import qualified Data.ByteString as BS
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Text as T
 import qualified Network.HTTP.Client as HTTPClient
@@ -40,6 +40,7 @@ update = do
   updates <- askSubApp
   liftApp . liftIO . infoM logHandle $ "Updates vk: " <> show updates
   updatePeerId
+  liftApp . modifyConfig $ HM.delete "attachment"
   updateAttachments
   getMsg
 
@@ -55,18 +56,19 @@ updateKeys updates =
       ts = getValue [key] updates
    in modifyConfig $ HM.insert key ts
 
-getAttachment :: TypeName -> Attachment -> App ()
-getAttachment typeName attachmentObj =
-  let infoObj = fromObject $ getValue [typeName] attachmentObj
-      ownerIdText =
-        T.pack . show . valueToInteger $ getValue ["owner_id"] infoObj
-      objIdText = T.pack . show . valueToInteger $ getValue ["id"] infoObj
+updateAttachment :: TypeName -> Attachment -> App ()
+updateAttachment typeName attachmentObj =
+  let ownerIdText = toText $ getValue ["owner_id"] attachmentObj
+      objIdText = toText $ getValue ["id"] attachmentObj
       accessKey =
-        case fromString $ getValue ["access_key"] infoObj of
+        case fromString $ getValue ["access_key"] attachmentObj of
           "" -> ""
           text -> "_" <> text
       attachment = typeName <> ownerIdText <> "_" <> objIdText <> accessKey
-   in modifyConfig . insertWithPush "attachment" $ A.String attachment
+   in do
+    configHandle <- getApp
+    liftIO . debugM (hLog configHandle) $ "Vk attachment: " <> T.unpack attachment
+    modifyConfig . insertWithPush "attachment" $ A.String attachment
 
 updateAttachments :: ObjApp ()
 updateAttachments = do
@@ -85,46 +87,52 @@ handleAttachments [] = return ()
 handleAttachments (attachmentObj:rest) = do
   Config.Handle {hLog = logHandle} <- getApp
   let typeName = fromString $ getValue ["type"] attachmentObj
+  let attachmentInfoObj = fromObject $ getValue [typeName] attachmentObj
   liftIO . debugM logHandle $ "Find vk attachments: " <> T.unpack typeName
   case typeName of
-    "sticker" -> handleSticker typeName attachmentObj
+    "sticker" -> handleSticker typeName attachmentInfoObj
     "photo" -> handlePhoto typeName attachmentObj
     "doc" -> handleDoc typeName attachmentObj
-    _ -> getAttachment typeName attachmentObj
+    _ ->
+      updateAttachment typeName attachmentInfoObj
   handleAttachments rest
 
 handleSticker, handlePhoto, handleDoc :: TypeName -> Attachment -> App ()
 handleSticker typeName attachmentObj =
   let field = "sticker_id"
-      value = getValue [typeName, field] attachmentObj
+      value = getValue [field] attachmentObj
    in modifyConfig
         (HM.insert "attachment" (A.String typeName) . HM.insert field value)
 
 handlePhoto typeName attachmentObj = do
   let sizesGot = getValue [typeName, "sizes"] attachmentObj
-  let loop = do
-        configHandle <- getApp
-        responseObj <-
-          fromObject . getValue ["response"] . fromObject <$>
-          (tryHttpJson $ HTTPSimple.httpJSON =<< getPhotosGetReq configHandle)
-        let count = valueToInteger $ getValue ["count"] responseObj
-        let offset = valueToInteger . getValue ["offset"] $ hConfig configHandle
-        let sizesArrExpected =
-              map (getValue ["sizes"]) . fromArrObject $
-              getValue ["items"] responseObj
-        if any (sizesGot ==) sizesArrExpected
-          then getAttachment typeName attachmentObj
-          else if offset >= count || count <= 50
-                 then uploadPhotosServer (fromArrObject sizesGot) >>
-                      getAttachment typeName attachmentObj
-                 else modifyConfig (insertWithPush "offset" $ A.Number 50) >>
-                      loop
-  loop
+  uploadPhotosServer (fromArrObject sizesGot)
+  --let loop = do
+  --      configHandle <- getApp
+  --      responseObj <-
+  --        fromObject . getValue ["response"] . fromObject <$>
+  --        (tryHttpJson $ HTTPSimple.httpJSON =<< getPhotosGetReq configHandle)
+  --      liftIO . debugM (hLog configHandle) $
+  --        "photos.get object: " <> show responseObj
+  --      let count = toInteger $ getValue ["count"] responseObj
+  --      let offset = toInteger . getValue ["offset"] $ hConfig configHandle
+  --      let sizesArrExpected =
+  --            map (getValue ["sizes"]) . fromArrObject $
+  --            getValue ["items"] responseObj
+  --      if any (sizesGot ==) sizesArrExpected
+  --        then updateAttachment typeName attachmentObj
+  --        else if offset >= count || count <= 50
+  --               then uploadPhotosServer (fromArrObject sizesGot) >>
+  --                    updateAttachment typeName attachmentObj
+  --               else modifyConfig (insertWithPush "offset" $ A.Number 50) >>
+  --                    loop
+  --loop
 
 handleDoc = undefined
 
 uploadPhotosServer :: [A.Object] -> App ()
 uploadPhotosServer sizesObjArr = do
+  let typeName = "photo"
   let foldlFunc =
         \ini@(height, width, _) x ->
           let heightX = fromNumber $ getValue ["height"] x
@@ -135,28 +143,39 @@ uploadPhotosServer sizesObjArr = do
                 else ini
   let (_, _, urlT) = foldl foldlFunc (0, 0, "") sizesObjArr
   let url = T.unpack urlT
-  --photoPath <- setPath $ "Photo." <> wordsBy (/='.') url
-  --liftIO $ writeFile photoPath =<<
   photoBS <-
     liftIO $
     HTTPClient.responseBody <$>
     (HTTPSimple.httpBS =<< HTTPClient.parseRequest url)
+  photoPath <-
+    liftIO $
+    (\x -> x <> "\\Photo." <> (last . wordsBy (/= '.')) url) <$> getRepDir
+  liftIO $ BS.writeFile photoPath photoBS
   configHandle1 <- getApp
+  liftIO . debugM (hLog configHandle1) $ "Photo url: " <> url
   responseObj <-
     fromObject . getValue ["response"] . fromObject <$>
     (tryHttpJson $
-     HTTPSimple.httpJSON =<< getPhotosGetUploadServerReq configHandle1)
+     HTTPSimple.httpJSON =<< getPhotosGetMgsUploadServerReq configHandle1)
+  let albumId = getValue ["album_id"] responseObj
+  modifyConfig $ HM.insert "album_id" albumId
+  liftIO . debugM (hLog configHandle1) $ "Upload object: " <> show responseObj
   let uploadUrl =
         HTTPClient.parseRequest_ . T.unpack . fromString $
         getValue ["upload_url"] responseObj
-  let formData = HTTPClient.partBS "photo" photoBS
-  photosObj <-
-    fromObject <$>
-    (tryHttpJson $
-     HTTPSimple.httpJSON =<< HTTPClient.formDataBody [formData] uploadUrl)
-  modifyConfig $ HM.union photosObj
+  let formData = HTTPClient.partFile typeName photoPath
+  photosJson <-
+    tryHttpJson $
+    HTTPSimple.httpJSON =<< HTTPClient.formDataBody [formData] uploadUrl
+  liftIO . debugM (hLog configHandle1) $ "Photo json: " <> show photosJson
+  modifyConfig . HM.union $ HM.singleton "photo_obj" photosJson
   configHandle2 <- getApp
-  void . tryHttpJson $ HTTPSimple.httpJSON =<< getPhotosSaveReq configHandle2
+  photoObj <-
+    head . fromArrObject . getValue ["response"] . fromObject <$>
+    (tryHttpJson $
+     HTTPSimple.httpJSON =<< getPhotosSaveMsgPhotoReq configHandle2)
+  liftIO . debugM (hLog configHandle2) $ "Photo object: " <> show photoObj
+  updateAttachment typeName photoObj
 
 getMsg :: ObjApp Message
 getMsg = do

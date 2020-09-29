@@ -1,6 +1,8 @@
 module Base.Aeson
   ( isArray
-  , valueToInteger
+  , toInteger
+  , toBS
+  , toText
   , fromString
   , fromNumber
   , fromObject
@@ -13,12 +15,16 @@ module Base.Aeson
   , getValue
   ) where
 
+import Prelude hiding (toInteger)
+
 import qualified Data.Aeson as A
 import qualified Data.Aeson.Types as AT
+import qualified Data.ByteString as BS
 import qualified Data.HashMap.Strict as HM
 import Data.Maybe
 import qualified Data.Scientific as S
 import qualified Data.Text as T
+import qualified Data.Text.Encoding as TE
 import qualified Data.Vector as V
 
 type Field = T.Text
@@ -29,8 +35,24 @@ isArray :: A.Value -> Bool
 isArray (A.Array _) = True
 isArray _ = False
 
-valueToInteger :: A.Value -> Integer
-valueToInteger = fromMaybe 0 . AT.parseMaybe A.parseJSON
+toInteger :: A.Value -> Integer
+toInteger = fromMaybe 0 . AT.parseMaybe A.parseJSON
+
+toBS :: A.Value -> BS.ByteString
+toBS value =
+  case value of
+    A.String text -> TE.encodeUtf8 text
+    A.Number _ -> TE.encodeUtf8 . T.pack . show $ toInteger value
+    A.Bool bool -> TE.encodeUtf8 . T.pack $ show bool
+    _ -> ""
+
+toText :: A.Value -> T.Text
+toText value =
+  case value of
+    A.String text -> text
+    A.Number _ -> T.pack . show $ toInteger value
+    A.Bool bool -> T.pack $ show bool
+    _ -> ""
 
 fromString :: A.Value -> Field
 fromString = fromMaybe "" . AT.parseMaybe A.parseJSON

@@ -14,7 +14,6 @@ import Log
 
 import Control.Monad
 import qualified Data.Aeson as A
-import qualified Data.ByteString.Char8 as BS
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
@@ -54,8 +53,7 @@ addKeyboard = do
 addVkSticker = do
   req <- getApp
   Config.Handle {hConfig = config} <- liftApp getApp
-  let stickerId = valueToInteger $ getValue ["sticker_id"] config
-  let stickerIdBS = BS.pack $ show stickerId
+  let stickerIdBS = toBS $ getValue ["sticker_id"] config
   when (isNeedSticker config) . putApp $
     (HTTPSimple.setRequestPath "/method/messages.sendSticker" .
      HTTPSimple.addToRequestQueryString [("sticker_id", Just stickerIdBS)])
