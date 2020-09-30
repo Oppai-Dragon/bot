@@ -3,11 +3,12 @@ module Request.Modify
   , isNeedKeyboard
   , isNeedSticker
   , addKeyboard
-  , addVkSticker
+  --, addVkSticker
   , addTelegramAttachment
   ) where
 
 import Base
+import Bot
 import Config
 import Config.Get
 import Log
@@ -22,8 +23,10 @@ import qualified Network.HTTP.Simple as HTTPSimple
 modifyRequest :: ReqApp HTTPSimple.Request
 modifyRequest = do
   addKeyboard
-  addVkSticker
-  addTelegramAttachment
+  configHandle <- liftApp getApp
+  case hBot configHandle of
+    Telegram -> addTelegramAttachment
+    Vk -> addVkSticker
   getApp
 
 isNeedKeyboard, isNeedSticker :: Config -> Bool
@@ -55,9 +58,7 @@ addVkSticker = do
   Config.Handle {hConfig = config} <- liftApp getApp
   let stickerIdBS = toBS $ getValue ["sticker_id"] config
   when (isNeedSticker config) . putApp $
-    (HTTPSimple.setRequestPath "/method/messages.sendSticker" .
-     HTTPSimple.addToRequestQueryString [("sticker_id", Just stickerIdBS)])
-      req
+    HTTPSimple.addToRequestQueryString [("sticker_id", Just stickerIdBS)] req
 
 addTelegramAttachment = do
   req <- getApp

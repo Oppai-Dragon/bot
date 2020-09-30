@@ -2,8 +2,10 @@ module Config.Get
   ( getStartRequest
   , getAskRequest
   , getSendRequest
-  , getPhotosGetMgsUploadServerReq
+  , getPhotosGetMsgUploadServerReq
+  , getDocsGetMsgUploadServerReq
   , getPhotosSaveMsgPhotoReq
+  , getDocsSaveReq
   , getPhotosGetReq
   , getRequest
   , getApiRequest
@@ -11,6 +13,7 @@ module Config.Get
   , getRequestPath
   , getRequestParams
   , buildRequest
+  , mapFindAndConvert
   , parseRequestPath
   , getUnpackField
   , getKeyboard
@@ -23,6 +26,7 @@ import Log
 
 import Control.Monad
 import qualified Data.Aeson as A
+import qualified Data.ByteString as BS
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
@@ -33,7 +37,7 @@ type Field = T.Text
 
 type Method = T.Text
 
-getStartRequest, getSendRequest, getAskRequest, getPhotosGetMgsUploadServerReq, getPhotosSaveMsgPhotoReq, getPhotosGetReq ::
+getStartRequest, getSendRequest, getAskRequest, getPhotosGetMsgUploadServerReq, getDocsGetMsgUploadServerReq, getPhotosSaveMsgPhotoReq, getDocsSaveReq, getPhotosGetReq ::
      Config.Handle -> IO HTTPClient.Request
 getStartRequest = getRequest "start_request"
 
@@ -41,9 +45,13 @@ getAskRequest = getRequest "ask_request"
 
 getSendRequest = getRequest "send_request"
 
-getPhotosGetMgsUploadServerReq = getApiRequest "photos.getMessagesUploadServer"
+getPhotosGetMsgUploadServerReq = getApiRequest "photos.getMessagesUploadServer"
+
+getDocsGetMsgUploadServerReq = getApiRequest "docs.getMessagesUploadServer"
 
 getPhotosSaveMsgPhotoReq = getApiRequest "photos.saveMessagesPhoto"
+
+getDocsSaveReq = getApiRequest "docs.save"
 
 getPhotosGetReq = getApiRequest "photos.get"
 
@@ -139,28 +147,31 @@ buildRequest ::
 buildRequest path query params conf =
   let initRequest =
         HTTPClient.parseRequest_ . T.unpack $ parseRequestPath path conf
-      mapFindAndConvert [] = []
-      mapFindAndConvert ((l, r):rest) =
-        let value = getValue [r] conf
-         in case value of
-              A.String _ ->
-                (TE.encodeUtf8 l, toBS value) : mapFindAndConvert rest
-              A.Number _ ->
-                (TE.encodeUtf8 l, toBS value) : mapFindAndConvert rest
-              A.Bool _ -> (TE.encodeUtf8 l, toBS value) : mapFindAndConvert rest
-              A.Object obj ->
-                (map (\(field, valueX) -> (TE.encodeUtf8 field, toBS valueX)) .
-                 HM.toList)
-                  obj <>
-                mapFindAndConvert rest
-              _ -> mapFindAndConvert rest
-      pairs = mapFindAndConvert params
+      pairs = mapFindAndConvert conf params
       request =
         HTTPClient.setQueryString
           query
           (HTTPClient.urlEncodedBody pairs initRequest)
             {HTTPClient.method = "POST"}
    in request
+
+mapFindAndConvert ::
+     Config -> [(Field, Field)] -> [(BS.ByteString, BS.ByteString)]
+mapFindAndConvert _ [] = []
+mapFindAndConvert conf ((l, r):rest) =
+  let value = getValue [r] conf
+   in case value of
+        A.String _ ->
+          (TE.encodeUtf8 l, toBS value) : mapFindAndConvert conf rest
+        A.Number _ ->
+          (TE.encodeUtf8 l, toBS value) : mapFindAndConvert conf rest
+        A.Bool _ -> (TE.encodeUtf8 l, toBS value) : mapFindAndConvert conf rest
+        A.Object obj ->
+          (map (\(field, valueX) -> (TE.encodeUtf8 field, toBS valueX)) .
+           HM.toList)
+            obj <>
+          mapFindAndConvert conf rest
+        _ -> mapFindAndConvert conf rest
 
 parseRequestPath :: Field -> Config -> Field
 parseRequestPath path conf =

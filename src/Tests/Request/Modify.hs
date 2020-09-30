@@ -28,4 +28,5 @@ isNeedStickerTest =
 
 testConfigObj :: A.Object
 testConfigObj =
-  HM.fromList [("lastMsg", A.String "/repeat"), ("sticker_id", A.Number 1)]
+  HM.fromList
+    [("lastMsg", A.String "/repeat"), ("attachment", A.String "sticker")]

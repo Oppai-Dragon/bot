@@ -5,6 +5,7 @@ module Base.Aeson
   , toText
   , fromString
   , fromNumber
+  , fromBool
   , fromObject
   , fromArr
   , fromArrString
@@ -60,6 +61,9 @@ fromString = fromMaybe "" . AT.parseMaybe A.parseJSON
 fromNumber :: A.Value -> S.Scientific
 fromNumber = fromMaybe 0 . AT.parseMaybe A.parseJSON
 
+fromBool :: A.Value -> Bool
+fromBool = fromMaybe False . AT.parseMaybe A.parseJSON
+
 fromObject :: A.Value -> A.Object
 fromObject = fromMaybe HM.empty . AT.parseMaybe A.parseJSON
 
@@ -83,7 +87,8 @@ insertWithPush field value obj =
           A.Array old -> A.Array . V.fromList $ V.toList old <> fromArr new
           A.Object old -> A.Object $ old `HM.union` fromObject new
           A.Number old -> A.Number $ old + fromNumber new
-          _ -> A.Null
+          A.Null -> new
+          A.Bool old -> A.Bool $ old || fromBool new
    in HM.insertWith pushFunc field value obj
 
 findObject :: Keys -> A.Object -> Maybe (Field, A.Object)
