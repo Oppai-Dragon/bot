@@ -31,8 +31,8 @@ type Message = T.Text
 
 type Updates = A.Object
 
-getKeys :: A.Value -> App Updates
-getKeys (A.Object obj) = do
+getKeys :: A.Object -> App Updates
+getKeys obj = do
   Config.Handle {hConfig = config, hLog = logHandle, hBot = bot} <- getApp
   let field = getUnpackField "start_request" config
   let updateObj =
@@ -48,10 +48,6 @@ getKeys (A.Object obj) = do
          case bot of
            Bot.Vk -> Vk.getKeys
            Bot.Telegram -> Telegram.getKeys
-getKeys _ = do
-  Config.Handle {hLog = logHandle} <- getApp
-  liftIO $ warningM logHandle "Empty json response"
-  pure HM.empty
 
 getLastObj :: A.Value -> Updates
 getLastObj value =

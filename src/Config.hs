@@ -44,7 +44,7 @@ new = do
   Config.Handle <$> setConfig <*> Log.new <*> return Vk >>= setBot
 
 setBot :: Config.Handle -> IO Config.Handle
-setBot configHandle@(Config.Handle {hConfig = config, hLog = logHandle}) = do
+setBot configHandle@Config.Handle {hConfig = config, hLog = logHandle} = do
   let maybeBot = AT.parseMaybe (\x -> x A..: "bot" >>= A.parseJSON) config
   case maybeBot of
     Just bot ->

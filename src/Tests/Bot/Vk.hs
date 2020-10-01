@@ -40,7 +40,7 @@ updatePhotoAttachmentTest =
 
 handleStickerTest =
   TestCase $
-  execApp (handleSticker stickerAttachmentObj) testHandle >>= \(Config.Handle {hConfig = config}) ->
+  execApp (handleSticker stickerAttachmentObj) testHandle >>= \Config.Handle {hConfig = config} ->
     assertEqual
       "for (execApp (handleSticker stickerAttachmentObj) testHandle >>= \\configHandle {hConfig=config} -> [HM.lookup \"attachment\" config,HM.lookup \"sticker_id\" config])"
       [Just $ A.String "sticker", Just $ A.Number 14090.0]

@@ -12,7 +12,7 @@ module Base.Aeson
   , fromArrObject
   , deleteKeys
   , insertWithPush
-  , findObject
+  , findValue
   , getValue
   ) where
 
@@ -37,7 +37,7 @@ isArray (A.Array _) = True
 isArray _ = False
 
 toInteger :: A.Value -> Integer
-toInteger = fromMaybe 0 . AT.parseMaybe A.parseJSON
+toInteger = fromMaybe 1 . AT.parseMaybe A.parseJSON
 
 toBS :: A.Value -> BS.ByteString
 toBS value =
@@ -91,12 +91,12 @@ insertWithPush field value obj =
           A.Bool old -> A.Bool $ old || fromBool new
    in HM.insertWith pushFunc field value obj
 
-findObject :: Keys -> A.Object -> Maybe (Field, A.Object)
-findObject [] _ = Nothing
-findObject (keyX:rest) obj =
+findValue :: Keys -> A.Object -> Maybe (Field, A.Value)
+findValue [] _ = Nothing
+findValue (keyX:rest) obj =
   case getValue [keyX] obj of
-    A.Object x -> Just (keyX, x)
-    _ -> findObject rest obj
+    A.Null -> findValue rest obj
+    value -> Just (keyX, value)
 
 getValue :: Keys -> A.Object -> A.Value
 getValue [] obj = A.Object obj

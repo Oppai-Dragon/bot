@@ -16,9 +16,11 @@ import Config.Get
 import Log
 import Request.Exception
 
+import Control.Monad
 import qualified Data.Aeson as A
 import qualified Data.ByteString as BS
 import qualified Data.HashMap.Strict as HM
+import Data.List
 import qualified Data.Text as T
 import qualified Network.HTTP.Client as HTTPClient
 import qualified Network.HTTP.Client.MultipartFormData as HTTPClient
@@ -37,6 +39,8 @@ type TypeName = T.Text
 
 type Message = T.Text
 
+type MessageObj = A.Object
+
 type Url = String
 
 getKeys :: Updates -> App Updates
@@ -47,20 +51,51 @@ update = do
   Config.Handle {hLog = logHandle} <- liftApp getApp
   updates <- askSubApp
   liftApp . liftIO . infoM logHandle $ "Updates vk: " <> show updates
-  updatePeerId
   liftApp clearAttachments
+  updateSendParams
   updateAttachments
   getMsg
 
-updatePeerId :: ObjApp ()
-updatePeerId = do
+updateSendParams :: ObjApp ()
+updateSendParams = do
   updates <- askSubApp
-  let userId = getValue ["object", "message", "peer_id"] updates
-  liftApp . modifyConfig $ HM.insert "peer_id" userId
+  let messageObj = fromObject $ getValue ["object", "message"] updates
+  liftApp $ do
+    updatePeerId messageObj
+    when (isFwdMsg messageObj) $ updateFwdMsg messageObj
+
+updatePeerId :: MessageObj -> App ()
+updatePeerId =
+  let field = "peer_id"
+   in modifyConfig . HM.insert field . getValue [field]
+
+isFwdMsg :: MessageObj -> Bool
+isFwdMsg = not . null . fromArrObject . getValue ["fwd_messages"]
+
+updateFwdMsg :: MessageObj -> App ()
+updateFwdMsg messageObj = do
+  responseobj <- updateConversationMsgIds messageObj
+  let fwdMsg =
+        A.String .
+        T.intercalate "," . map (toText . getValue ["id"]) . fromArrObject $
+        getValue ["items"] responseobj
+  modifyConfig $ HM.insert "forward_messages" fwdMsg
+
+updateConversationMsgIds :: MessageObj -> App ResponseObj
+updateConversationMsgIds messageObj = do
+  let conversationMsgIds =
+        A.String .
+        T.intercalate "," .
+        map (toText . getValue ["conversation_message_id"]) . fromArrObject $
+        getValue ["fwd_messages"] messageObj
+  modifyConfig $ HM.insert "conversation_message_ids" conversationMsgIds
+  configHandle <- getApp
+  fmap (fromObject . unpackResponse) . (=<<) handleJsonResponse . tryHttpJson $
+    HTTPSimple.httpJSON =<< getMsgGetByConversationMsgId configHandle
 
 clearAttachments :: App ()
 clearAttachments = do
-  modifyConfig $ HM.delete "content_source"
+  modifyConfig $ HM.delete "forward_messages"
   modifyConfig $ HM.delete "attachment"
 
 updateKeys :: Updates -> App ()
@@ -99,20 +134,20 @@ handleAttachments :: [Attachment] -> App ()
 handleAttachments [] = return ()
 handleAttachments (attachmentObj:rest) = do
   Config.Handle {hLog = logHandle} <- getApp
-  let typeName = fromString $ getValue ["type"] attachmentObj
+  let typeNameValue = getValue ["type"] attachmentObj
+  let typeName = fromString typeNameValue
   let infoObj = fromObject $ getValue [typeName] attachmentObj
   liftIO . debugM logHandle $ "Find vk attachments: " <> T.unpack typeName
-  modifyConfig $ HM.insert "type" (A.String typeName)
+  modifyConfig $ HM.insert "type" typeNameValue
   case typeName of
     "sticker" -> handleSticker infoObj
     "photo" -> uploadAttachmentServer typeName infoObj
     "doc" -> uploadAttachmentServer typeName infoObj
     "audio_message" -> uploadAttachmentServer typeName infoObj
-    "graffiti" -> uploadAttachmentServer typeName infoObj
     "audio" -> updateAttachment typeName infoObj
     "video" -> updateAttachment typeName infoObj
     _ ->
-      liftIO . errorM logHandle $
+      liftIO . warningM logHandle $
       "Unknown type of attachment: " <> T.unpack typeName
   handleAttachments rest
 
@@ -154,7 +189,8 @@ createAttachmentFile typeName url Config.Handle { hConfig = config
           _ ->
             x <>
             "\\" <>
-            title <> "." <> (T.unpack . fromString . getValue ["ext"]) config
+            (intercalate "." . take 2 . wordsBy (/= '.'))
+              (title <> "." <> (T.unpack . fromString . getValue ["ext"]) config)
   attachmentBS <-
     fmap HTTPClient.responseBody $
     HTTPSimple.httpBS =<<
@@ -172,7 +208,6 @@ setAttachmentUrl typeName infoObj = do
       "photo" -> return $ getPhotoUrl infoObj
       "doc" -> return $ getDocUrl infoObj
       "audio_message" -> return $ getAudioMsgUrl infoObj
-      "graffiti" -> return $ getGraffitiUrl infoObj
       _ -> do
         liftIO . errorM logHandle $
           "Unknown type of attachment: " <> T.unpack typeName
@@ -189,7 +224,7 @@ checkUrl url =
       return ""
     _ -> return url
 
-getPhotoUrl, getDocUrl, getAudioMsgUrl, getGraffitiUrl :: InfoObj -> Url
+getPhotoUrl, getDocUrl, getAudioMsgUrl :: InfoObj -> Url
 getPhotoUrl infoObj =
   let sizesObjArr = fromArrObject $ getValue ["sizes"] infoObj
       foldlFunc =
@@ -205,23 +240,17 @@ getPhotoUrl infoObj =
 
 getDocUrl = T.unpack . fromString . getValue ["url"]
 
-getAudioMsgUrl infoObj =
-  case getValue ["link_ogg"] infoObj of
-    A.String urlT -> T.unpack urlT
-    _ -> T.unpack . fromString $ getValue ["link_mp3"] infoObj
-
-getGraffitiUrl = T.unpack . fromString . getValue ["url"]
+getAudioMsgUrl = T.unpack . fromString . getValue ["link_mp3"]
 
 attachmentGetMsgUploadServer :: TypeName -> App ResponseObj
 attachmentGetMsgUploadServer typeName = do
-  configHandle@(Config.Handle {hLog = logHandle}) <- getApp
+  configHandle@Config.Handle {hLog = logHandle} <- getApp
   resultObj <-
     fmap (fromObject . unpackResponse) .
     (=<<) handleJsonResponse . tryHttpJson . (=<<) HTTPSimple.httpJSON $
     case typeName of
       "doc" -> getDocsGetMsgUploadServerReq configHandle
       "audio_message" -> getDocsGetMsgUploadServerReq configHandle
-      "graffiti" -> getDocsGetMsgUploadServerReq configHandle
       "photo" -> getPhotosGetMsgUploadServerReq configHandle
       _ -> do
         errorM logHandle $ "Unknown type of attachment: " <> T.unpack typeName
@@ -231,13 +260,12 @@ attachmentGetMsgUploadServer typeName = do
 
 attachmentSave :: TypeName -> App ResponseObj
 attachmentSave typeName = do
-  configHandle@(Config.Handle {hLog = logHandle}) <- getApp
+  configHandle@Config.Handle {hLog = logHandle} <- getApp
   let handleResponseObj =
         case typeName of
           "audio_message" ->
             return . fromObject . getValue [typeName] . fromObject
           "doc" -> return . fromObject . getValue [typeName] . fromObject
-          "graffiti" -> return . fromObject . getValue [typeName] . fromObject
           "photo" -> return . head . fromArrObject
           _ ->
             \_ -> do
@@ -251,13 +279,12 @@ attachmentSave typeName = do
     case typeName of
       "doc" -> getDocsSaveReq configHandle
       "audio_message" -> getDocsSaveReq configHandle
-      "graffiti" -> getDocsSaveReq configHandle
       "photo" -> getPhotosSaveMsgPhotoReq configHandle
       _ -> do
         errorM logHandle $ "Unknown type of attachment: " <> T.unpack typeName
         return HTTPSimple.defaultRequest
   liftIO . debugM logHandle $
-    T.unpack typeName <> " object: " <> show responseObj
+    T.unpack typeName <> " save object: " <> show responseObj
   return responseObj
 
 addAttachmentObj :: TypeName -> FilePath -> ResponseObj -> App ()
@@ -276,7 +303,6 @@ addAttachmentObj typeName attachmentPath responseObj = do
   case typeName of
     "doc" -> modifyConfig $ HM.union attachmentObj
     "audio_message" -> modifyConfig $ HM.union attachmentObj
-    "graffiti" -> modifyConfig $ HM.union attachmentObj
     "photo" -> modifyConfig . HM.union $ HM.singleton "photo_obj" attachmentJson
     _ -> do
       liftIO . errorM logHandle $
@@ -289,7 +315,6 @@ choosePartName typeName =
     "photo" -> return "photo"
     "doc" -> return "file"
     "audio_message" -> return "file"
-    "graffiti" -> return "file"
     _ -> do
       Config.Handle {hLog = logHandle} <- getApp
       liftIO . errorM logHandle $
@@ -302,5 +327,10 @@ unpackResponse = getValue ["response"]
 getMsg :: ObjApp Message
 getMsg = do
   updates <- askSubApp
+  Config.Handle {hConfig = config} <- liftApp getApp
   let msg = fromString $ getValue ["object", "message", "text"] updates
-  return msg
+  let typeName = fromString $ getValue ["type"] config
+  return $
+    case typeName of
+      "graffiti" -> "Cannot send graffiti, it's only for users"
+      _ -> msg

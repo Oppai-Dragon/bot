@@ -18,10 +18,10 @@ baseAesonTests =
   , TestLabel "insertArrayWithPushTest" insertArrayWithPushTest
   , TestLabel "insertObjectWithPushTest" insertObjectWithPushTest
   , TestLabel "insertNumberWithPushTest" insertNumberWithPushTest
-  , TestLabel "findObjectTest" findObjectTest
+  , TestLabel "findValueTest" findValueTest
   ]
 
-getValueTest, insertStringWithPushTest, insertArrayWithPushTest, insertObjectWithPushTest, insertNumberWithPushTest, findObjectTest ::
+getValueTest, insertStringWithPushTest, insertArrayWithPushTest, insertObjectWithPushTest, insertNumberWithPushTest, findValueTest ::
      Test
 getValueTest =
   TestCase $
@@ -65,11 +65,11 @@ insertNumberWithPushTest =
     (HM.singleton "id" $ A.Number 2) $
   insertWithPush "id" (A.Number 1) (HM.singleton "id" $ A.Number 1)
 
-findObjectTest =
+findValueTest =
   TestCase $
   assertEqual
-    "for (findObject [\"k1\",\"k2\"] (HM.fromList [(\"k1\",A.Null),(\"k2\",A.object [\"kek\" A..= A.Null])]))"
-    (Just ("k2", HM.singleton "kek" $ A.Null)) $
-  findObject
+    "for (findValue [\"k1\",\"k2\"] (HM.fromList [(\"k1\",A.Null),(\"k2\",A.object [\"kek\" A..= A.Null])]))"
+    (Just ("k2", A.object ["kek" A..= A.Null])) $
+  findValue
     ["k1", "k2"]
     (HM.fromList [("k1", A.Null), ("k2", A.object ["kek" A..= A.Null])])

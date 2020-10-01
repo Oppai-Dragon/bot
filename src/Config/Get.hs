@@ -2,6 +2,7 @@ module Config.Get
   ( getStartRequest
   , getAskRequest
   , getSendRequest
+  , getMsgGetByConversationMsgId
   , getPhotosGetMsgUploadServerReq
   , getDocsGetMsgUploadServerReq
   , getPhotosSaveMsgPhotoReq
@@ -37,13 +38,16 @@ type Field = T.Text
 
 type Method = T.Text
 
-getStartRequest, getSendRequest, getAskRequest, getPhotosGetMsgUploadServerReq, getDocsGetMsgUploadServerReq, getPhotosSaveMsgPhotoReq, getDocsSaveReq, getPhotosGetReq ::
+getStartRequest, getAskRequest, getSendRequest, getMsgGetByConversationMsgId, getPhotosGetMsgUploadServerReq, getDocsGetMsgUploadServerReq, getPhotosSaveMsgPhotoReq, getDocsSaveReq, getPhotosGetReq ::
      Config.Handle -> IO HTTPClient.Request
 getStartRequest = getRequest "start_request"
 
 getAskRequest = getRequest "ask_request"
 
 getSendRequest = getRequest "send_request"
+
+getMsgGetByConversationMsgId =
+  getApiRequest "messages.getByConversationMessageId"
 
 getPhotosGetMsgUploadServerReq = getApiRequest "photos.getMessagesUploadServer"
 
@@ -63,9 +67,8 @@ getRequest nameReq Config.Handle { hConfig = config
   let requestObj = getRequestObj nameReq config
       requestPath = getRequestPath requestObj
       requestQuery = getRequestQuery requestObj
-      requestParams = getRequestParams requestObj
-      requestObjBool = HM.null requestObj
-      requestPathBool = T.null requestPath
+      (requestParams, requestObjBool, requestPathBool) =
+        getRequestParamsAndBoolObjBoolPath requestObj requestPath
       requestParamsAndQueryBool = null requestParams && null requestQuery
       isRequestCollected =
         all not [requestObjBool, requestPathBool, requestParamsAndQueryBool]
@@ -98,9 +101,8 @@ getApiRequest apiMethod Config.Handle { hConfig = config
         getRequestQuery . fromObject $ getValue ["query"] apiMethodObj
       requestObj = insertWithPush "params" methodParamArr apiRequestObj
       requestPath = getRequestPath apiRequestObj <> apiMethod
-      requestParams = getRequestParams requestObj
-      requestObjBool = HM.null requestObj
-      requestPathBool = T.null requestPath
+      (requestParams, requestObjBool, requestPathBool) =
+        getRequestParamsAndBoolObjBoolPath requestObj requestPath
       requestParamsAndQueryBool = null requestParams && null requestQuery
       isRequestCollected =
         all not [requestObjBool, requestPathBool, requestParamsAndQueryBool]
@@ -120,6 +122,11 @@ getApiRequest apiMethod Config.Handle { hConfig = config
             "Can't find field \"params\" in { \"" <>
             T.unpack apiMethod <> "\": ...} in " <> show bot <> ".json"
           return HTTPClient.defaultRequest
+
+getRequestParamsAndBoolObjBoolPath ::
+     A.Object -> Field -> ([(Field, Field)], Bool, Bool)
+getRequestParamsAndBoolObjBoolPath requestObj requestPath =
+  (getRequestParams requestObj, HM.null requestObj, T.null requestPath)
 
 getRequestObj :: Field -> Config -> A.Object
 getRequestObj field = fromObject . getValue [field]

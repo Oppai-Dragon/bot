@@ -52,9 +52,12 @@ updateMethod = do
     A.String _ ->
       liftApp . modifyConfig . HM.insert "method" $ A.String "Message"
     _ ->
-      case findObject attachmentArr messageObj of
-        Just (attachment, obj) -> liftApp $ handleAttachment attachment obj
-        Nothing -> return ()
+      case findValue attachmentArr messageObj of
+        Just (attachment, A.Object obj) ->
+          liftApp $ handleAttachment attachment obj
+        Just (attachment, value@(A.Array _)) ->
+          liftApp $ handleAttachment attachment (head $ fromArrObject value)
+        _ -> return ()
 
 handleAttachment :: T.Text -> A.Object -> App ()
 handleAttachment attachment attachmentObj = do
