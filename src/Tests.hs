@@ -2,18 +2,16 @@ module Tests
   ( runTest
   ) where
 
-import Log
 import Tests.Base
-import Tests.Bot.Telegram
-import Tests.Bot.Vk
+import Tests.Bot
 import Tests.Config.Get
+import Tests.Config.Update
 import Tests.Request.Modify
 
 import Test.HUnit
 
 runTest :: IO Counts
-runTest = do
-  logHandle <- new
-  infoM logHandle "TESTS-------------------------------------"
+runTest =
   runTestTT . TestList $
-    botVkTests <> botTelegramTests <> baseTests <> configGetTests <> requestModifyTests
+  baseTests <>
+  botTests <> configGetTests <> configUpdateTests <> requestModifyTests

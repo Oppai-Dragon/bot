@@ -2,6 +2,7 @@ module Request.Exception
   ( tryHttpJson
   , tryParseRequest
   , handleJsonResponse
+  , tryUnpackResponseHttpJson
   ) where
 
 import Base
@@ -27,7 +28,10 @@ tryHttpJson ioResponse = do
       return A.Null
 
 tryParseRequest ::
-     HasCallStack => IO HTTPSimple.Request -> Log.Handle -> IO HTTPSimple.Request
+     HasCallStack
+  => IO HTTPSimple.Request
+  -> Log.Handle
+  -> IO HTTPSimple.Request
 tryParseRequest ioReq logHandle = do
   reqEither <- liftIO $ tryM ioReq
   case reqEither of
@@ -51,3 +55,8 @@ handleJsonResponse value = do
               "Failed request: " <> (show . fromObject . getValue ["error"]) obj) >>
              failCase
            _ -> return obj
+
+tryUnpackResponseHttpJson ::
+     HasCallStack => IO (HTTPSimple.Response A.Value) -> App A.Value
+tryUnpackResponseHttpJson =
+  fmap (getValue ["response"]) . (=<<) handleJsonResponse . tryHttpJson

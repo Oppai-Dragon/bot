@@ -3,7 +3,7 @@ module Tests.Base.Aeson
   ) where
 
 import Base.Aeson
-import Config
+import Tests.Config
 
 import qualified Data.Aeson as A
 import qualified Data.HashMap.Strict as HM
@@ -25,8 +25,8 @@ getValueTest, insertStringWithPushTest, insertArrayWithPushTest, insertObjectWit
      Test
 getValueTest =
   TestCase $
-  assertEqual "for (getValue [\"repeatN\"] testConfig)" (A.Number 1) $
-  getValue ["repeatN"] testConfig
+  assertEqual "for (getValue [\"repeatN\"] testVkConfig)" (A.Number 1) $
+  getValue ["repeatN"] testVkConfig
 
 insertStringWithPushTest =
   TestCase $

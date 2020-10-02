@@ -7,8 +7,6 @@ module Config
   , Config.new
   , setBot
   , modifyConfig
-  , testHandle
-  , testConfig
   ) where
 
 import Base
@@ -21,7 +19,6 @@ import Control.Monad.Trans.State.Strict
 import qualified Data.Aeson as A
 import qualified Data.Aeson.Types as AT
 import qualified Network.HTTP.Client as HTTPClient
-import System.IO.Unsafe (unsafePerformIO)
 
 type Config = A.Object
 
@@ -61,11 +58,3 @@ modifyConfig func = do
   configHandle <- getApp
   let newConfig = func $ hConfig configHandle
   putApp configHandle {hConfig = newConfig}
-
-testHandle :: Config.Handle
-{-# NOINLINE testHandle #-}
-testHandle = unsafePerformIO Config.new
-
-testConfig :: A.Object
-{-# NOINLINE testConfig #-}
-testConfig = unsafePerformIO setConfig

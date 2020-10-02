@@ -31,11 +31,9 @@ This is a simple echo bot - it sends back what it received. He works in a telegr
    - error - indicates a critical error, which prevents further execution.
 debug < infog < warning < error. Thus, by entering a certain level of logging into the value of the "logLevel" field, the application will send logs whose level is either equal to or higher than the specified level.
 
+By default, json bots have everything you need to work. For vk, you need to join the echo bot community and write to the conversation. For telegram, write to bot @echo19012000bot.
 
 #### Vk Bot
-
-Create this file at the specified path using the data below.
-- src/Bot/Vk/Vk.json
 
 ```json
 { "start_request":
@@ -69,15 +67,30 @@ Create this file at the specified path using the data below.
         , "v"
         ]
     }
+, "api_request":
+    { "path": "https://api.vk.com/method/"
+    , "params":
+        [ "access_token"
+        , "v"
+        ]
+    }
+, "api_methods":
+    { "photos.getMessagesUploadServer":
+        { "query":
+            { "peer_id":0
+            }
+        }
+    , ...
+    }
 , "act":"a_check"
 , "wait":25
 , "mode":2
 , "msgField":"message"
-, "access_token":""
+, "access_token":"d3cfb010771408ed9bf218b4a66df01c33e533b20366a58edfe76e5d5be3f27429c369ecf86ef2a8b6949"
 , "keyboard":
     { "keyboard":"{\"one_time\":true,\"buttons\":[[{\"action\":{\"type\":\"text\",\"payload\":\"{\\\"button\\\": \\\"1\\\"}\",\"label\":\"1\"},\"color\":\"primary\"},{\"action\":{\"type\":\"text\",\"payload\":\"{\\\"button\\\": \\\"1\\\"}\",\"label\":\"2\"},\"color\":\"primary\"},{\"action\":{\"type\":\"text\",\"payload\":\"{\\\"button\\\": \\\"1\\\"}\",\"label\":\"3\"},\"color\":\"primary\"},{\"action\":{\"type\":\"text\",\"payload\":\"{\\\"button\\\": \\\"1\\\"}\",\"label\":\"4\"},\"color\":\"primary\"},{\"action\":{\"type\":\"text\",\"payload\":\"{\\\"button\\\": \\\"1\\\"}\",\"label\":\"5\"},\"color\":\"primary\"}]]}"
     }
-, "group_id":
+, "group_id":199167319
 , "v":"5.103"
 }
 ```
@@ -98,9 +111,6 @@ To work VK bot you must have 3 fields correctly filled in: access_token, peer_id
 ![HelperWithgroup_id](images/helpWithGroupId.PNG)
 
 #### Telegram Bot
-
-Create this file at the specified path using the data below.
-- src/Bot/Telegram/Telegram.json
 
 ```json
 { "start_request":
@@ -131,15 +141,18 @@ Create this file at the specified path using the data below.
         , { "photo": "file_id" }
         ]
     }
-, "ignore":
-    [ "from"
-    , "chat"
-    , "message_id"
-    , "date"
+, "attachments":
+    [ "document"
+    , "audio"
+    , "voice"
+    , "sticker"
+    , "animation"
+    , "photo"
+    , "video"
     ]
 , "method": "Message"
 , "timeout":30
-, "access_token":""
+, "access_token":"1222090060:AAG110wvYURl-eheQ2eIyDCSWaY3KWxve0s"
 , "keyboard":
     { "reply_markup":"{\"keyboard\":[[{\"text\":\"1\"},{\"text\":\"2\"},{\"text\":\"3\"},{\"text\":\"4\"},{\"text\":\"5\"}]],\"resize_keyboard\":true,\"one_time_keyboard\":true}"
     }
@@ -164,13 +177,18 @@ If you have problems with the documentation, then just write this bot in a teleg
 7. access_token: key parameter for sending API requests.
 8. keyboard: this field contains the field that corresponds to the parameter for the API and the json object written as a string. This is the keyboard that becomes visible if you write the /repeat command to the bot. If you want to change it, check out the template at the appropriate API and you can use [this site](https://tools.knowledgewalls.com/jsontostring) to converte json to string.
 9. msgField: each API has its own message field in the json response. When creating a request, the bot looks for the required parameters in the config, so it is important to know the name of the message parameter.
-10. ignore: keys which need delete for better founding attachments in updates.
 
 ###### Optional data
 
 Vk bot
     - act, mode: these are standard values ​​taken from the documentation, do not touch them.
     - v: When I started making the bot, the version was 5.103. Since when the API version changes, the methods and parameters, and even more the json response fields, may change, I do not advise you to touch this field.
+    - api_request: path and params for any request.
+    - api_methods: name of method then params or query object which contain param with value.
+
+Telegram bot
+    - method: the method changes depending on what you want to send.
+    - attachments: attachments, which bot can receive.
 
 ### Step 2 - building and testing
 In the root folder of the repository, open git bash and write the following commands.
@@ -189,7 +207,6 @@ You can start the application from git bash with this line.
 ```git
 $ stack exec bot-exe
 ```
-To stop an application launched in this way, first select the git bash window as the active one and press crtl + c.
 If you closed git bash before the application stopped, then it will continue to work until you shut it down, for example, through the task manager.
 Also after the assembly bot-exe.exe appeared, it is located in bot/.stack-work/install/<something>/bin.
 
@@ -215,7 +232,7 @@ ReaderT appears at the message processing level.
 * src/Request.hs - requests for logic, the bot accepts 3 requests: 1 - initial, 2 - asking, 3 - responding.
     - /Modify.hs - functions for modify request.
     - /Exception.hs - functions for handling exception of request.
-* src/Config.hs - Handle, App types, testConfig and testHandle.
+* src/Config.hs - Handle, App types.
     - /Get.hs - Functions for getting certain values ​​from the config.
     - /Set.hs - Setting config from Config.json and <Bot>.json.
     - /Update.hs - Functions for changing the config..

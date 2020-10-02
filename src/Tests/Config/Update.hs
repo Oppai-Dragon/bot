@@ -3,8 +3,8 @@ module Tests.Config.Update
   ) where
 
 import Base
-import Config
 import Config.Update
+import Tests.Config
 
 import Test.HUnit
 
@@ -14,5 +14,7 @@ configUpdateTests = [TestLabel "parseMessageTest" parseMessageTest]
 parseMessageTest :: Test
 parseMessageTest =
   TestCase $
-  evalApp (parseMessage "[club152071194|@club152071194] 3") testHandle >>=
-  assertEqual "for (parseMessage \"[club152071194|@club152071194] 3\")" "3"
+  evalApp (parseMessage "[club152071194|@club152071194] 3") testVkHandle >>=
+  assertEqual
+    "for (evalApp (parseMessage \"[club152071194|@club152071194] 3\") testVkHandle >>=)"
+    "3"

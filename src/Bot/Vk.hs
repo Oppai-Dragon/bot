@@ -90,7 +90,7 @@ updateConversationMsgIds messageObj = do
         getValue ["fwd_messages"] messageObj
   modifyConfig $ HM.insert "conversation_message_ids" conversationMsgIds
   configHandle <- getApp
-  fmap (fromObject . unpackResponse) . (=<<) handleJsonResponse . tryHttpJson $
+  fmap fromObject . tryUnpackResponseHttpJson $
     HTTPSimple.httpJSON =<< getMsgGetByConversationMsgId configHandle
 
 clearAttachments :: App ()
@@ -246,8 +246,7 @@ attachmentGetMsgUploadServer :: TypeName -> App ResponseObj
 attachmentGetMsgUploadServer typeName = do
   configHandle@Config.Handle {hLog = logHandle} <- getApp
   resultObj <-
-    fmap (fromObject . unpackResponse) .
-    (=<<) handleJsonResponse . tryHttpJson . (=<<) HTTPSimple.httpJSON $
+    fmap fromObject . tryUnpackResponseHttpJson . (=<<) HTTPSimple.httpJSON $
     case typeName of
       "doc" -> getDocsGetMsgUploadServerReq configHandle
       "audio_message" -> getDocsGetMsgUploadServerReq configHandle
@@ -273,9 +272,8 @@ attachmentSave typeName = do
                 "Unknown type of attachment: " <> T.unpack typeName
               return HM.empty
   responseObj <-
-    (=<<) handleResponseObj $
-    fmap unpackResponse .
-    (=<<) handleJsonResponse . tryHttpJson . (=<<) HTTPSimple.httpJSON $
+    (=<<) handleResponseObj .
+    tryUnpackResponseHttpJson . (=<<) HTTPSimple.httpJSON $
     case typeName of
       "doc" -> getDocsSaveReq configHandle
       "audio_message" -> getDocsSaveReq configHandle
@@ -320,9 +318,6 @@ choosePartName typeName =
       liftIO . errorM logHandle $
         "Unknown type of attachment: " <> T.unpack typeName
       return ""
-
-unpackResponse :: ResponseObj -> A.Value
-unpackResponse = getValue ["response"]
 
 getMsg :: ObjApp Message
 getMsg = do

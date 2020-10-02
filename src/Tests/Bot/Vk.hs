@@ -3,10 +3,9 @@ module Tests.Bot.Vk
   ) where
 
 import Base
-import Bot
 import Bot.Vk
 import Config
-import Log
+import Tests.Config
 
 import qualified Data.Aeson as A
 import qualified Data.HashMap.Strict as HM
@@ -25,42 +24,40 @@ botVkTests =
 updateTest, updatePhotoAttachmentTest, handleStickerTest, getMsgTest :: Test
 updateTest =
   TestCase $
-  runApp (runSubApp update testUpdatesObj) testHandle >>=
+  runApp (runSubApp update testUpdatesObj) testVkHandle >>=
   assertEqual
-    "for (runApp (runSubApp update testUpdatesObj) testHandle)"
+    "for (runApp (runSubApp update testUpdatesObj) testVkHandle)"
     ("privet", testUpdatedHandle)
 
 updatePhotoAttachmentTest =
   TestCase $
-  execApp (updateAttachment "photo" photoAttachmentObj) testHandle >>=
+  execApp (updateAttachment "photo" photoAttachmentObj) testVkHandle >>=
   assertEqual
-    "for (execApp (updateAttachment \"photo\" photoAttachmentObj) testHandle >>= return . HM.lookup \"attachment\" . hConfig)"
+    "for (execApp (updateAttachment \"photo\" photoAttachmentObj) testVkHandle >>= return . HM.lookup \"attachment\" . hConfig)"
     (Just $ A.String "photo174435367_457241046_192e2656c063e68c0b") .
   HM.lookup "attachment" . hConfig
 
 handleStickerTest =
   TestCase $
-  execApp (handleSticker stickerAttachmentObj) testHandle >>= \Config.Handle {hConfig = config} ->
+  execApp (handleSticker stickerAttachmentObj) testVkHandle >>= \Config.Handle {hConfig = config} ->
     assertEqual
-      "for (execApp (handleSticker stickerAttachmentObj) testHandle >>= \\configHandle {hConfig=config} -> [HM.lookup \"attachment\" config,HM.lookup \"sticker_id\" config])"
+      "for (execApp (handleSticker stickerAttachmentObj) testVkHandle >>= \\configHandle {hConfig=config} -> [HM.lookup \"attachment\" config,HM.lookup \"sticker_id\" config])"
       [Just $ A.String "sticker", Just $ A.Number 14090.0]
       [HM.lookup "attachment" config, HM.lookup "sticker_id" config]
 
 getMsgTest =
   TestCase $
-  evalApp (runSubApp getMsg testUpdatesObj) testHandle >>=
+  evalApp (runSubApp getMsg testUpdatesObj) testVkHandle >>=
   assertEqual
-    "for (evalApp (runSubApp getMsg testUpdatesObj) testHandle)"
+    "for (evalApp (runSubApp getMsg testUpdatesObj) testVkHandle)"
     "privet"
 
 testUpdatedHandle :: Config.Handle
-testUpdatedHandle =
-  Config.Handle
-    {hConfig = testUpdatedConfig, hLog = Log.Handle "" Nothing, hBot = Vk}
+testUpdatedHandle = testVkHandle {hConfig = testUpdatedConfig}
 
 testUpdatedConfig, testUpdated, testUpdatesObj, photoAttachmentObj, stickerAttachmentObj, audioAttachmentObj ::
      A.Object
-testUpdatedConfig = HM.union testUpdated testConfig
+testUpdatedConfig = HM.union testUpdated testVkConfig
 
 testUpdated =
   HM.fromList

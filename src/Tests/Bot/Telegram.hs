@@ -3,10 +3,9 @@ module Tests.Bot.Telegram
   ) where
 
 import Base
-import Bot
 import Bot.Telegram
 import Config
-import Log
+import Tests.Config
 
 import qualified Data.Aeson as A
 import qualified Data.HashMap.Strict as HM
@@ -23,33 +22,31 @@ botTelegramTests =
 getKeysTest, updateTest, getMsgTest :: Test
 getKeysTest =
   TestCase $
-  evalApp (getKeys testUpdatesTextObj) testHandle >>=
+  evalApp (getKeys testUpdatesTextObj) testTelegramHandle >>=
   assertEqual
-    "for (evalApp (getKeys testUpdatesTextObj) testHandle)"
+    "for (evalApp (getKeys testUpdatesTextObj) testTelegramHandle)"
     (HM.singleton "chat_id" (A.Number 1))
 
 updateTest =
   TestCase $
-  runApp (runSubApp update testUpdatesDocumentObj) testHandle >>=
+  runApp (runSubApp update testUpdatesDocumentObj) testTelegramHandle >>=
   assertEqual
-    "for (runApp (runSubApp update testUpdatesDocumentObj) testHandle)"
+    "for (runApp (runSubApp update testUpdatesDocumentObj) testTelegramHandle)"
     ("", testUpdatedHandle)
 
 getMsgTest =
   TestCase $
-  evalApp (runSubApp getMsg testUpdatesTextObj) testHandle >>=
+  evalApp (runSubApp getMsg testUpdatesTextObj) testTelegramHandle >>=
   assertEqual
-    "for (evalApp (runSubApp getMsg testUpdatesTextObj) testHandle)"
+    "for (evalApp (runSubApp getMsg testUpdatesTextObj) testTelegramHandle)"
     "suka"
 
 testUpdatedHandle :: Config.Handle
-testUpdatedHandle =
-  Config.Handle
-    {hConfig = testUpdatedConfig, hLog = Log.Handle "" Nothing, hBot = Telegram}
+testUpdatedHandle = testTelegramHandle {hConfig = testUpdatedConfig}
 
 testUpdatedConfig, testUpdated, testUpdatesDocumentObj, testUpdatesTextObj ::
      A.Object
-testUpdatedConfig = HM.union testUpdated testConfig
+testUpdatedConfig = HM.union testUpdated testTelegramConfig
 
 testUpdated =
   HM.fromList
