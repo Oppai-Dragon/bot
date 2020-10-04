@@ -7,7 +7,6 @@ module Request
 import Base
 import Config
 import Config.Get
-import Log
 import Request.Exception
 import Request.Modify
 
