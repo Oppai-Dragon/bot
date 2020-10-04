@@ -63,6 +63,7 @@ testUpdated =
   HM.fromList
     [ ("attachment", A.String "audio174435367_456241022")
     , ("peer_id", A.Number 1.74435367e8)
+    , ("type", A.String "audio")
     ]
 
 testUpdatesObj =

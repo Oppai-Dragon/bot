@@ -97,8 +97,7 @@ getApiRequest apiMethod Config.Handle { hConfig = config
   let apiRequestObj = getRequestObj "api_request" config
       apiMethodObj = fromObject $ getValue ["api_methods", apiMethod] config
       methodParamArr = getValue ["params"] apiMethodObj
-      requestQuery =
-        getRequestQuery . fromObject $ getValue ["query"] apiMethodObj
+      requestQuery = getRequestQuery apiMethodObj
       requestObj = insertWithPush "params" methodParamArr apiRequestObj
       requestPath = getRequestPath apiRequestObj <> apiMethod
       (requestParams, requestObjBool, requestPathBool) =
@@ -136,14 +135,17 @@ getRequestPath = fromString . getValue ["path"]
 
 getRequestQuery :: A.Object -> HTTPSimple.Query
 getRequestQuery =
-  map (\(field, value) -> (TE.encodeUtf8 field, Just $ toBS value)) . HM.toList
+  map (\(field, value) -> (TE.encodeUtf8 field, Just $ toBS value)) .
+  HM.toList . fromObject . getValue ["query"]
 
 getRequestParams :: A.Object -> [(Field, Field)]
 getRequestParams obj =
   let value = getValue ["params"] obj
-   in if isArray value
-        then map (\x -> (x, x)) $ fromArrString value
-        else []
+   in case fromArrString value of
+        [] ->
+          concatMap (map (\(l, r) -> (l, fromString r)) . HM.toList) $
+          fromArrObject value
+        arr -> map (\x -> (x, x)) arr
 
 buildRequest ::
      Field

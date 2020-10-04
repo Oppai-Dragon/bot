@@ -1,6 +1,5 @@
 module Base.Aeson
-  ( isArray
-  , toInteger
+  ( toInteger
   , toBS
   , toText
   , fromString
@@ -31,10 +30,6 @@ import qualified Data.Vector as V
 type Field = T.Text
 
 type Keys = [Field]
-
-isArray :: A.Value -> Bool
-isArray (A.Array _) = True
-isArray _ = False
 
 toInteger :: A.Value -> Integer
 toInteger = fromMaybe 1 . AT.parseMaybe A.parseJSON

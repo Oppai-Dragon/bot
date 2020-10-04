@@ -10,6 +10,7 @@ import Config
 import Log
 
 import qualified Data.Aeson as A
+import qualified Data.Text as T
 import qualified Data.HashMap.Strict as HM
 import GHC.Stack
 import qualified Network.HTTP.Client as HTTPClient
@@ -46,15 +47,27 @@ handleJsonResponse :: HasCallStack => A.Value -> App A.Object
 handleJsonResponse value = do
   Config.Handle {hLog = logHandle} <- getApp
   let obj = fromObject value
+  let requestFailedObj = fromObject $ getValue ["error"] obj
+  let errorDescr = T.unpack . fromString $ getValue ["description"] obj
+  let errorNum = Base.toInteger $ getValue ["error_code"] obj
   let failCase = return HM.empty
   if HM.null obj
-    then liftIO (errorM logHandle "Json from response is empty") >> failCase
+    then do
+      liftIO $ errorM logHandle "Json from response is empty"
+      failCase
     else case HM.keys obj of
-           ["error"] ->
-             (liftIO . errorM logHandle $
-              "Failed request: " <> (show . fromObject . getValue ["error"]) obj) >>
+           ["error"] -> do
+             liftIO . errorM logHandle $
+               "Failed request: " <> show requestFailedObj
              failCase
-           _ -> return obj
+           _ ->
+             case getValue ["ok"] obj of
+               A.Bool False -> do
+                 liftIO . errorM logHandle $
+                   "Error " <> show errorNum <> ": " <> errorDescr
+                 failCase
+               A.Bool True -> return obj
+               _ -> return obj
 
 tryUnpackResponseHttpJson ::
      HasCallStack => IO (HTTPSimple.Response A.Value) -> App A.Value

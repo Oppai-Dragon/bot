@@ -22,11 +22,14 @@ import qualified Network.HTTP.Simple as HTTPSimple
 
 modifyRequest :: ReqApp HTTPSimple.Request
 modifyRequest = do
-  addKeyboard
-  configHandle <- liftApp getApp
-  case hBot configHandle of
-    Telegram -> addTelegramAttachment
-    Vk -> addVkSticker
+  Config.Handle {hConfig = config, hBot = bot} <- liftApp getApp
+  when (isNeedKeyboard config) addKeyboard
+  case bot of
+    Telegram ->
+      case fromString $ getValue ["method"] config of
+        "Message" -> return ()
+        attachmentUp -> addTelegramAttachment attachmentUp
+    Vk -> when (isNeedSticker config) addVkSticker
   getApp
 
 isNeedKeyboard, isNeedSticker :: Config -> Bool
@@ -40,35 +43,31 @@ isNeedSticker conf =
     Just (A.String "sticker") -> True
     _ -> False
 
-addKeyboard, addVkSticker, addTelegramAttachment :: ReqApp ()
+addKeyboard, addVkSticker :: ReqApp ()
 addKeyboard = do
-  req <- getApp
   Config.Handle {hConfig = config, hLog = logHandle} <- liftApp getApp
-  when (isNeedKeyboard config) $
-    (>>) (liftApp . liftIO $ debugM logHandle "Add keyboard") . putApp $
+  liftApp . liftIO $ debugM logHandle "Add keyboard"
+  getApp >>=
+    putApp .
     case getKeyboard config of
       (keybField, A.String keybValue):_ ->
         HTTPSimple.addToRequestQueryString
           [(TE.encodeUtf8 keybField, Just $ TE.encodeUtf8 keybValue)]
-          req
-      _ -> req
+      _ -> id
 
 addVkSticker = do
-  req <- getApp
   Config.Handle {hConfig = config} <- liftApp getApp
   let stickerIdBS = toBS $ getValue ["sticker_id"] config
-  when (isNeedSticker config) . putApp $
-    HTTPSimple.addToRequestQueryString [("sticker_id", Just stickerIdBS)] req
+  getApp >>=
+    putApp .
+    HTTPSimple.addToRequestQueryString [("sticker_id", Just stickerIdBS)]
 
-addTelegramAttachment = do
-  req <- getApp
+addTelegramAttachment :: T.Text -> ReqApp ()
+addTelegramAttachment attachmentUp = do
   Config.Handle {hConfig = config} <- liftApp getApp
-  case fromString $ getValue ["method"] config of
-    "Message" -> return ()
-    attachment' -> do
-      let fileId = fromString $ getValue ["file_id"] config
-      let attachment = TE.encodeUtf8 $ T.toLower attachment'
-      putApp $
-        HTTPSimple.addToRequestQueryString
-          [(attachment, Just $ TE.encodeUtf8 fileId)]
-          req
+  let fileId = fromString $ getValue ["file_id"] config
+  let attachmentLow = TE.encodeUtf8 $ T.toLower attachmentUp
+  getApp >>=
+    putApp .
+    HTTPSimple.addToRequestQueryString
+      [(attachmentLow, Just $ TE.encodeUtf8 fileId)]

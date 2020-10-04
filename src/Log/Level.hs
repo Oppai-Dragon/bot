@@ -10,14 +10,11 @@ data Level
   | INFO -- Information
   | WARNING -- General Warnings
   | ERROR -- General Errors
-  deriving (Show,Read)
+  deriving (Show,Read,Eq)
 
 instance Bounded Level where
   minBound = DEBUG
   maxBound = ERROR
-
-instance Eq Level where
-  (==) _ _ = False
 
 instance Ord Level where
   compare DEBUG DEBUG = EQ

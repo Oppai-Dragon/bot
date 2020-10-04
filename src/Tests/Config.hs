@@ -27,8 +27,8 @@ testLogHandle :: Log.Handle
 testLogHandle =
   Log.Handle {hLogPath = setPath "\\logs\\Test log.txt", hLogLevel = Just DEBUG}
 
-testVkConfig, testTelegramConfig :: Config
-testVkConfig =
+testTelegramConfig, testVkConfig :: Config
+testTelegramConfig =
   HM.fromList
     [ ( "attachments"
       , A.Array $
@@ -103,7 +103,7 @@ testVkConfig =
     , ("repeatN", A.Number 1.0)
     ]
 
-testTelegramConfig =
+testVkConfig =
   HM.fromList
     [ ( "send_request"
       , A.Object

@@ -76,8 +76,5 @@ getMsg :: ObjApp Message
 getMsg = do
   updates <- askSubApp
   let messageObj = fromObject $ getValue ["message"] updates
-  let msg =
-        case getValue ["text"] messageObj of
-          A.String x -> x
-          _ -> ""
+  let msg = fromString $ getValue ["text"] messageObj
   return msg
