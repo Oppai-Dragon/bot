@@ -6,6 +6,7 @@ module Base.Interface
   , evalApp
   , execApp
   , runApp
+  , modifyApp
   ) where
 
 import Control.Monad.Trans.Reader
@@ -31,3 +32,6 @@ execApp = execStateT
 
 runApp :: Monad m => StateT s m a -> s -> m (a, s)
 runApp = runStateT
+
+modifyApp :: Monad m => (s -> s) -> StateT s m ()
+modifyApp = modify

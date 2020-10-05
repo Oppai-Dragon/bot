@@ -47,8 +47,7 @@ addKeyboard, addVkSticker :: ReqApp ()
 addKeyboard = do
   Config.Handle {hConfig = config, hLog = logHandle} <- liftApp getApp
   liftApp . liftIO $ debugM logHandle "Add keyboard"
-  getApp >>=
-    putApp .
+  modifyReq $
     case getKeyboard config of
       (keybField, A.String keybValue):_ ->
         HTTPSimple.addToRequestQueryString
@@ -58,8 +57,7 @@ addKeyboard = do
 addVkSticker = do
   Config.Handle {hConfig = config} <- liftApp getApp
   let stickerIdBS = toBS $ getValue ["sticker_id"] config
-  getApp >>=
-    putApp .
+  modifyReq $
     HTTPSimple.addToRequestQueryString [("sticker_id", Just stickerIdBS)]
 
 addTelegramAttachment :: T.Text -> ReqApp ()
@@ -67,7 +65,6 @@ addTelegramAttachment attachmentUp = do
   Config.Handle {hConfig = config} <- liftApp getApp
   let fileId = fromString $ getValue ["file_id"] config
   let attachmentLow = TE.encodeUtf8 $ T.toLower attachmentUp
-  getApp >>=
-    putApp .
+  modifyReq $
     HTTPSimple.addToRequestQueryString
       [(attachmentLow, Just $ TE.encodeUtf8 fileId)]

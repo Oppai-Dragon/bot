@@ -7,6 +7,7 @@ module Config
   , Config.new
   , setBot
   , modifyConfig
+  , modifyReq
   ) where
 
 import Base
@@ -58,3 +59,6 @@ modifyConfig func = do
   configHandle <- getApp
   let newConfig = func $ hConfig configHandle
   putApp configHandle {hConfig = newConfig}
+
+modifyReq :: (HTTPClient.Request -> HTTPClient.Request) -> ReqApp ()
+modifyReq = modifyApp
