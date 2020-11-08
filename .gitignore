@@ -2,5 +2,7 @@
 .vscode
 .history
 .VSCodeCounter/
+Vk.json
+Telegram.json
 logs/
 *~

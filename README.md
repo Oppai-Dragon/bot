@@ -33,6 +33,14 @@ debug < infog < warning < error. Thus, by entering a certain level of logging in
 
 By default, json bots have everything you need to work. For vk, you need to join the echo bot community and write to the conversation. For telegram, write to bot @echo19012000bot.
 
+#### Bot config
+
+The organization of configs for bots should be similar.
+For vk: Bot/Vk/Vk.json
+
+The repository contains unfilled configs with a changed name. So you need remove "Overall" from name.
+For vk: Vk.Overall.json -> Vk.json
+
 #### Vk Bot
 
 ```json
@@ -86,16 +94,16 @@ By default, json bots have everything you need to work. For vk, you need to join
 , "wait":25
 , "mode":2
 , "msgField":"message"
-, "access_token":"d3cfb010771408ed9bf218b4a66df01c33e533b20366a58edfe76e5d5be3f27429c369ecf86ef2a8b6949"
+, "access_token":""
 , "keyboard":
     { "keyboard":"{\"one_time\":true,\"buttons\":[[{\"action\":{\"type\":\"text\",\"payload\":\"{\\\"button\\\": \\\"1\\\"}\",\"label\":\"1\"},\"color\":\"primary\"},{\"action\":{\"type\":\"text\",\"payload\":\"{\\\"button\\\": \\\"1\\\"}\",\"label\":\"2\"},\"color\":\"primary\"},{\"action\":{\"type\":\"text\",\"payload\":\"{\\\"button\\\": \\\"1\\\"}\",\"label\":\"3\"},\"color\":\"primary\"},{\"action\":{\"type\":\"text\",\"payload\":\"{\\\"button\\\": \\\"1\\\"}\",\"label\":\"4\"},\"color\":\"primary\"},{\"action\":{\"type\":\"text\",\"payload\":\"{\\\"button\\\": \\\"1\\\"}\",\"label\":\"5\"},\"color\":\"primary\"}]]}"
     }
-, "group_id":199167319
+, "group_id":
 , "v":"5.103"
 }
 ```
 
-To work VK bot you must have 3 fields correctly filled in: access_token, peer_id, group_id.
+To work VK bot you must have 3 fields correctly filled in: access_token, group_id.
 1. access_token: this is the access token.
    - [This is the documentation for receiving it.](https://vk.com/dev/bots_docs?f=1.1.%20%D0%9F%D0%BE%D0%BB%D1%83%D1%87%D0%B5%D0%BD%D0%B8%D0%B5%20%D0%BA%D0%BB%D1%8E%D1%87%D0%B0%20%D0%B4%D0%BE%D1%81%D1%82%D1%83%D0%BF%D0%B0)
    - However, the easiest way to get it is through the community. To do this, of course, you need to be registered.
@@ -107,6 +115,7 @@ To work VK bot you must have 3 fields correctly filled in: access_token, peer_id
      - Copy it and paste between double quotes in MyConfig.json, as the value of the access_token field. Remember to activate the LongPoll API and synchronize the version of the API with the "v" field in MyConfig.json. For everything to work correctly, put "API version: 5.103". Since it was everything that was created on it.
      - It is also very important which events are activated - the server will respond to your json request with event information. Since this is an echo bot, activate only "Message received".
 ![HelperAccessToken](images/helpWithAccessToken.png)
+![helpWithNotification](images/helpWithNotification.png)
 2. group_id: This is the easiest, go to your community and there will be a number in the address bar.
 ![HelperWithgroup_id](images/helpWithGroupId.PNG)
 
@@ -152,7 +161,7 @@ To work VK bot you must have 3 fields correctly filled in: access_token, peer_id
     ]
 , "method": "Message"
 , "timeout":30
-, "access_token":"1222090060:AAG110wvYURl-eheQ2eIyDCSWaY3KWxve0s"
+, "access_token":""
 , "keyboard":
     { "reply_markup":"{\"keyboard\":[[{\"text\":\"1\"},{\"text\":\"2\"},{\"text\":\"3\"},{\"text\":\"4\"},{\"text\":\"5\"}]],\"resize_keyboard\":true,\"one_time_keyboard\":true}"
     }
