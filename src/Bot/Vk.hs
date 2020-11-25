@@ -50,7 +50,7 @@ update :: ObjApp Message
 update = do
   Config.Handle {hLog = logHandle} <- liftApp getApp
   updates <- askSubApp
-  liftApp . liftIO . infoM logHandle $ "Updates vk: " <> show updates
+  liftApp . liftIO . logInfo logHandle $ "Updates vk: " <> show updates
   liftApp clearAttachments
   updateSendParams
   updateAttachments
@@ -114,7 +114,7 @@ updateAttachment typeName attachmentObj =
           text -> "_" <> text
       attachment = typeName <> ownerIdText <> "_" <> objIdText <> accessKey
    in do configHandle <- getApp
-         liftIO . debugM (hLog configHandle) $
+         liftIO . logDebug (hLog configHandle) $
            "Vk attachment: " <> T.unpack attachment
          modifyConfig . insertWithPush "attachment" $ A.String attachment
 
@@ -127,7 +127,7 @@ updateAttachments = do
   liftApp $ handleAttachments attachmentsObjArr
   Config.Handle {hConfig = config, hLog = logHandle} <- liftApp getApp
   let attachments = getValue ["attachment"] config
-  liftApp . liftIO . debugM logHandle $
+  liftApp . liftIO . logDebug logHandle $
     "Vk attachments: " <> (T.unpack . fromString) attachments
 
 handleAttachments :: [Attachment] -> App ()
@@ -137,7 +137,7 @@ handleAttachments (attachmentObj:rest) = do
   let typeNameValue = getValue ["type"] attachmentObj
   let typeName = fromString typeNameValue
   let infoObj = fromObject $ getValue [typeName] attachmentObj
-  liftIO . debugM logHandle $ "Find vk attachments: " <> T.unpack typeName
+  liftIO . logDebug logHandle $ "Find vk attachments: " <> T.unpack typeName
   modifyConfig $ HM.insert "type" typeNameValue
   case typeName of
     "sticker" -> handleSticker infoObj
@@ -147,7 +147,7 @@ handleAttachments (attachmentObj:rest) = do
     "audio" -> updateAttachment typeName infoObj
     "video" -> updateAttachment typeName infoObj
     _ ->
-      liftIO . warningM logHandle $
+      liftIO . logWarning logHandle $
       "Unknown type of attachment: " <> T.unpack typeName
   handleAttachments rest
 
@@ -157,7 +157,7 @@ handleSticker attachmentObj =
       field = "sticker_id"
       value = getValue [field] attachmentObj
    in do configHandle <- getApp
-         liftIO . debugM (hLog configHandle) $
+         liftIO . logDebug (hLog configHandle) $
            "Sticker_id: " <> (T.unpack . toText) value
          modifyConfig $ HM.insert field value
          modifyConfig . HM.insert "attachment" $ A.String typeName
@@ -209,10 +209,10 @@ setAttachmentUrl typeName infoObj = do
       "doc" -> return $ getDocUrl infoObj
       "audio_message" -> return $ getAudioMsgUrl infoObj
       _ -> do
-        liftIO . errorM logHandle $
+        liftIO . logError logHandle $
           "Unknown type of attachment: " <> T.unpack typeName
         return ""
-  liftIO . debugM logHandle $ T.unpack typeName <> " url: " <> url
+  liftIO . logDebug logHandle $ T.unpack typeName <> " url: " <> url
   return url
 
 checkUrl :: Url -> App Url
@@ -220,7 +220,7 @@ checkUrl url =
   case url of
     "" -> do
       configHandle <- getApp
-      liftIO $ errorM (hLog configHandle) "Failed on getting url of attachment"
+      liftIO $ logError (hLog configHandle) "Failed on getting url of attachment"
       return ""
     _ -> return url
 
@@ -252,9 +252,9 @@ attachmentGetMsgUploadServer typeName = do
       "audio_message" -> getDocsGetMsgUploadServerReq configHandle
       "photo" -> getPhotosGetMsgUploadServerReq configHandle
       _ -> do
-        errorM logHandle $ "Unknown type of attachment: " <> T.unpack typeName
+        logError logHandle $ "Unknown type of attachment: " <> T.unpack typeName
         return HTTPSimple.defaultRequest
-  liftIO . debugM logHandle $ "Upload object: " <> show resultObj
+  liftIO . logDebug logHandle $ "Upload object: " <> show resultObj
   return resultObj
 
 attachmentSave :: TypeName -> App ResponseObj
@@ -268,7 +268,7 @@ attachmentSave typeName = do
           "photo" -> return . head . fromArrObject
           _ ->
             \_ -> do
-              liftIO . errorM logHandle $
+              liftIO . logError logHandle $
                 "Unknown type of attachment: " <> T.unpack typeName
               return HM.empty
   responseObj <-
@@ -279,9 +279,9 @@ attachmentSave typeName = do
       "audio_message" -> getDocsSaveReq configHandle
       "photo" -> getPhotosSaveMsgPhotoReq configHandle
       _ -> do
-        errorM logHandle $ "Unknown type of attachment: " <> T.unpack typeName
+        logError logHandle $ "Unknown type of attachment: " <> T.unpack typeName
         return HTTPSimple.defaultRequest
-  liftIO . debugM logHandle $
+  liftIO . logDebug logHandle $
     T.unpack typeName <> " save object: " <> show responseObj
   return responseObj
 
@@ -296,14 +296,14 @@ addAttachmentObj typeName attachmentPath responseObj = do
     tryHttpJson $
     HTTPSimple.httpJSON =<< HTTPClient.formDataBody [formData] request
   let attachmentObj = fromObject attachmentJson
-  liftIO . debugM logHandle $
+  liftIO . logDebug logHandle $
     T.unpack typeName <> " json: " <> show attachmentJson
   case typeName of
     "doc" -> modifyConfig $ HM.union attachmentObj
     "audio_message" -> modifyConfig $ HM.union attachmentObj
     "photo" -> modifyConfig . HM.union $ HM.singleton "photo_obj" attachmentJson
     _ -> do
-      liftIO . errorM logHandle $
+      liftIO . logError logHandle $
         "Unknown type of attachment: " <> T.unpack typeName
       return ()
 
@@ -315,7 +315,7 @@ choosePartName typeName =
     "audio_message" -> return "file"
     _ -> do
       Config.Handle {hLog = logHandle} <- getApp
-      liftIO . errorM logHandle $
+      liftIO . logError logHandle $
         "Unknown type of attachment: " <> T.unpack typeName
       return ""
 

@@ -29,7 +29,7 @@ update :: ObjApp Message
 update = do
   Config.Handle {hLog = logHandle} <- liftApp getApp
   updates <- askSubApp
-  liftApp . liftIO . infoM logHandle $ "Updates telegram: " <> show updates
+  liftApp . liftIO . logInfo logHandle $ "Updates telegram: " <> show updates
   updateKeys
   updateMethod
   getMsg
@@ -62,14 +62,14 @@ updateMethod = do
 handleAttachment :: T.Text -> A.Object -> App ()
 handleAttachment attachment attachmentObj = do
   Config.Handle {hLog = logHandle} <- getApp
-  liftIO . infoM logHandle $ "Telegram attachments: " <> T.unpack attachment
+  liftIO . logInfo logHandle $ "Telegram attachments: " <> T.unpack attachment
   let method = (toUpper . T.head) attachment `T.cons` T.tail attachment
   let fileId = getValue ["file_id"] attachmentObj
-  liftIO . infoM logHandle $
+  liftIO . logInfo logHandle $
     "method - send" <> T.unpack method <> ", file_id - " <> show fileId
   let localConfig =
         HM.fromList [("method", A.String method), ("file_id", fileId)]
-  liftIO . debugM logHandle $ "Telegram method is : send" <> T.unpack method
+  liftIO . logDebug logHandle $ "Telegram method is : send" <> T.unpack method
   modifyConfig $ HM.union localConfig
 
 getMsg :: ObjApp Message

@@ -10,24 +10,7 @@ data Level
   | INFO -- Information
   | WARNING -- General Warnings
   | ERROR -- General Errors
-  deriving (Show,Read,Eq)
-
-instance Bounded Level where
-  minBound = DEBUG
-  maxBound = ERROR
-
-instance Ord Level where
-  compare DEBUG DEBUG = EQ
-  compare INFO INFO = EQ
-  compare WARNING WARNING = EQ
-  compare ERROR ERROR = EQ
-  compare DEBUG _ = LT
-  compare INFO DEBUG = GT
-  compare INFO _ = LT
-  compare WARNING DEBUG = GT
-  compare WARNING INFO = GT
-  compare WARNING _ = LT
-  compare ERROR _ = GT
+  deriving (Show, Read, Eq, Ord, Bounded)
 
 instance A.FromJSON Level where
   parseJSON =

@@ -75,16 +75,16 @@ getRequest nameReq Config.Handle { hConfig = config
    in if isRequestCollected
         then return $ buildRequest requestPath requestQuery requestParams config
         else do
-          errorM
+          logError
             logHandle
             "Request isn't collected, will be used default request from http-client"
-          when requestObjBool . warningM logHandle $
+          when requestObjBool . logWarning logHandle $
             "Can't find " <>
             T.unpack nameReq <> " object in " <> show bot <> ".json"
-          when requestPathBool . warningM logHandle $
+          when requestPathBool . logWarning logHandle $
             "Can't find field \"path\" in { \"" <>
             T.unpack nameReq <> "\": ...} in " <> show bot <> ".json"
-          when requestParamsAndQueryBool . warningM logHandle $
+          when requestParamsAndQueryBool . logWarning logHandle $
             "Can't find field \"params\" in { \"" <>
             T.unpack nameReq <> "\": ...} in " <> show bot <> ".json"
           return HTTPClient.defaultRequest
@@ -108,16 +108,16 @@ getApiRequest apiMethod Config.Handle { hConfig = config
    in if isRequestCollected
         then return $ buildRequest requestPath requestQuery requestParams config
         else do
-          errorM
+          logError
             logHandle
             "Request isn't collected, will be used default request from http-client"
-          when requestObjBool . warningM logHandle $
+          when requestObjBool . logWarning logHandle $
             "Can't find " <>
             T.unpack apiMethod <> " object in " <> show bot <> ".json"
-          when requestPathBool . warningM logHandle $
+          when requestPathBool . logWarning logHandle $
             "Can't find field \"path\" in { \"" <>
             T.unpack apiMethod <> "\": ...} in " <> show bot <> ".json"
-          when requestParamsAndQueryBool . warningM logHandle $
+          when requestParamsAndQueryBool . logWarning logHandle $
             "Can't find field \"params\" in { \"" <>
             T.unpack apiMethod <> "\": ...} in " <> show bot <> ".json"
           return HTTPClient.defaultRequest

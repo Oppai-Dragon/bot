@@ -17,20 +17,20 @@ import qualified Data.HashMap.Strict as HM
 set :: FilePath -> IO A.Object
 set path = do
   logPath <- setLogPath
-  result <- tryM $ BSL.readFile path
+  result <- try $ BSL.readFile path
   case result of
     Right bsl ->
       case A.decode bsl of
         Just hm -> pure hm
         Nothing -> pure HM.empty
     Left err -> do
-      errorM (Handle logPath Nothing) $ show err
+      logError (Handle logPath Nothing) $ show err
       pure HM.empty
 
 setConfig :: IO A.Object
 setConfig = do
   logPath <- setLogPath
-  config <- set $ setPath "\\src\\Config.json"
+  config <- set $ setPath "\\configs\\Config.json"
   let maybeBot = AT.parseMaybe (\x -> x A..: "bot" >>= A.parseJSON) config
   let maybeLevel =
         AT.parseMaybe (\x -> x A..: "logLevel" >>= A.parseJSON) config
@@ -39,14 +39,14 @@ setConfig = do
     fmap show $
     case maybeBot of
       Just x -> do
-        infoM logHandle $ show x <> " implementation is found"
+        logInfo logHandle $ show x <> " implementation is found"
         return x
       Nothing -> do
-        errorM
+        logError
           logHandle
           "Can't find bot implementation, check his name in Config.json"
-        infoM logHandle "Will be used Vk implementation"
+        logInfo logHandle "Will be used Vk implementation"
         return Vk
-  let botPath = "\\src\\Bot\\" <> botStr <> "\\" <> botStr <> ".json"
+  let botPath = "\\configs\\Bot\\" <> botStr <> "\\" <> botStr <> ".json"
   botConfig <- set $ setPath botPath
   return $ HM.union botConfig config

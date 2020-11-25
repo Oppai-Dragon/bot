@@ -46,7 +46,7 @@ isNeedSticker conf =
 addKeyboard, addVkSticker :: ReqApp ()
 addKeyboard = do
   Config.Handle {hConfig = config, hLog = logHandle} <- liftApp getApp
-  liftApp . liftIO $ debugM logHandle "Add keyboard"
+  liftApp . liftIO $ logDebug logHandle "Add keyboard"
   modifyReq $
     case getKeyboard config of
       (keybField, A.String keybValue):_ ->

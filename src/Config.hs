@@ -46,12 +46,12 @@ setBot configHandle@Config.Handle {hConfig = config, hLog = logHandle} = do
   let maybeBot = AT.parseMaybe (\x -> x A..: "bot" >>= A.parseJSON) config
   case maybeBot of
     Just bot ->
-      infoM logHandle "Bot is readable" >> return configHandle {hBot = bot}
+      logInfo logHandle "Bot is readable" >> return configHandle {hBot = bot}
     Nothing ->
-      errorM
+      logError
         logHandle
         "Can't read bot name, check his name in Config.json with name in Bot.hs" >>
-      infoM logHandle "Will use Vk implementation" >>
+      logInfo logHandle "Will use Vk implementation" >>
       return configHandle
 
 modifyConfig :: (Config -> Config) -> App ()

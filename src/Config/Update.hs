@@ -42,7 +42,7 @@ getKeys obj = do
           _ -> HM.empty
   if HM.null updateObj
     then do
-      liftIO $ warningM logHandle "Can't unpack response of request"
+      liftIO $ logWarning logHandle "Can't unpack response of request"
       return HM.empty
     else updateObj &
          case bot of
@@ -111,7 +111,7 @@ parseMessage msg = do
         return str :: P.Parsec String String String
   case P.runParser (P.try parseFunc P.<|> P.many P.anyChar) "" "" (T.unpack msg) of
     Left err -> do
-      liftIO . warningM logHandle $ show err
+      liftIO . logWarning logHandle $ show err
       return ""
     Right x -> return $ T.pack x
 

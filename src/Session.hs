@@ -17,12 +17,12 @@ type Updates = A.Object
 runBot :: App ()
 runBot = do
   Config.Handle {hLog = logHandle, hBot = bot} <- getApp
-  liftIO $ infoM logHandle $ show bot <> " bot is selected."
+  liftIO $ logInfo logHandle $ show bot <> " bot is selected."
   obj <- startRequest
   localConfig <- getKeys obj
   modifyConfig $ HM.union localConfig
   liveSession
-  liftIO $ endM logHandle
+  liftIO $ logFinishMsg logHandle
 
 liveSession :: App ()
 liveSession = do
@@ -44,7 +44,7 @@ echoMessage (updates:rest) = do
     else do
       updateConfig updates bot
       let repeatN = Base.toInteger $ getValue ["repeatN"] config
-      liftIO . debugM logHandle $
+      liftIO . logDebug logHandle $
         "Number of repetitions " <> show repeatN <> "."
       sendMessage repeatN
       echoMessage rest

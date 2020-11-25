@@ -70,10 +70,10 @@
 , "wait":30
 , "mode":2
 , "msgField":"message"
-, "access_token":"d3cfb010771408ed9bf218b4a66df01c33e533b20366a58edfe76e5d5be3f27429c369ecf86ef2a8b6949"
+, "access_token":""
 , "keyboard":
     { "keyboard":"{\"one_time\":true,\"buttons\":[[{\"action\":{\"type\":\"text\",\"payload\":\"{\\\"button\\\": \\\"1\\\"}\",\"label\":\"1\"},\"color\":\"primary\"},{\"action\":{\"type\":\"text\",\"payload\":\"{\\\"button\\\": \\\"1\\\"}\",\"label\":\"2\"},\"color\":\"primary\"},{\"action\":{\"type\":\"text\",\"payload\":\"{\\\"button\\\": \\\"1\\\"}\",\"label\":\"3\"},\"color\":\"primary\"},{\"action\":{\"type\":\"text\",\"payload\":\"{\\\"button\\\": \\\"1\\\"}\",\"label\":\"4\"},\"color\":\"primary\"},{\"action\":{\"type\":\"text\",\"payload\":\"{\\\"button\\\": \\\"1\\\"}\",\"label\":\"5\"},\"color\":\"primary\"}]]}"
     }
-, "group_id":199167319
+, "group_id":0
 , "v":"5.103"
 }
