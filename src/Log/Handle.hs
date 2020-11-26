@@ -7,6 +7,6 @@ import Log.Level
 data Handle =
   Handle
     { hLogPath :: FilePath
-    , hLogLevel :: Maybe Level
+    , hMaybeLogLevel :: Maybe Level
     }
   deriving (Show,Eq)

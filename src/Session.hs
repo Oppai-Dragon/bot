@@ -18,19 +18,26 @@ runBot :: App ()
 runBot = do
   Config.Handle {hLog = logHandle, hBot = bot} <- getApp
   liftIO $ logInfo logHandle $ show bot <> " bot is selected."
-  obj <- startRequest
-  localConfig <- getKeys obj
-  modifyConfig $ HM.union localConfig
-  liveSession
-  liftIO $ logFinishMsg logHandle
+  maybeObj <- maybeStartRequest
+  case maybeObj of
+    Just obj ->
+      localConfig <- getKeys obj
+      modifyConfig $ HM.union localConfig
+      liveSession
+      liftIO $ logFinishMsg logHandle
+    Nothing -> return ()
+
 
 liveSession :: App ()
 liveSession = do
-  obj <- askRequest
-  updates <- getUpdates obj
-  if null updates
-    then liveSession
-    else echoMessage updates >> liveSession
+  maybeObj <- maybeAskRequest
+  case maybeObj of
+    Just obj ->
+      updates <- getUpdates obj
+      if null updates
+        then liveSession
+        else echoMessage updates >> liveSession
+    Nothing -> return ()
 
 echoMessage :: [Updates] -> App ()
 echoMessage (updates:rest) = do

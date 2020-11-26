@@ -12,7 +12,7 @@ import qualified System.IO as IO
 setLogPath :: IO FilePath
 setLogPath = do
   repPath <- getRepDir
-  let logsDirPath = repPath <> "\\logs"
+  let logsDirPath = repPath <> "logs"
   Dir.createDirectoryIfMissing False logsDirPath
   (UTC.UTCTime day _) <- UTC.getCurrentTime
   let logFile = show day <> ".txt"

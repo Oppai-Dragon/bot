@@ -4,8 +4,8 @@ module Config
   , ObjApp
   , ReqApp
   , Config.Handle(..)
-  , Config.new
-  , setBot
+  , Config.maybeNew
+  , setMaybeBot
   , modifyConfig
   , modifyReq
   ) where
@@ -19,6 +19,7 @@ import Control.Monad.Trans.Reader
 import Control.Monad.Trans.State.Strict
 import qualified Data.Aeson as A
 import qualified Data.Aeson.Types as AT
+import Data.Maybe
 import qualified Network.HTTP.Client as HTTPClient
 
 type Config = A.Object
@@ -37,22 +38,33 @@ data Handle =
     }
   deriving (Show, Eq)
 
-new :: IO Config.Handle
-new = do
-  Config.Handle <$> setConfig <*> Log.new <*> return Vk >>= setBot
+maybeNew :: IO (Maybe Config.Handle)
+maybeNew = do
+  maybeConfig <- maybeSetConfig
+  maybeLogHandle <- Log.maybeNew
+  maybeBot <- setMaybeBot
+  if all isJust [maybeConfig, maybeLogHandle, maybeBot]
+    then return $
+         Just
+           Config.Handle
+             { hConfig = fromJust maybeConfig
+             , hLog = fromJust maybeLogHandle
+             , hBot = fromJust maybeBot
+             }
+    else return Nothing
 
-setBot :: Config.Handle -> IO Config.Handle
-setBot configHandle@Config.Handle {hConfig = config, hLog = logHandle} = do
+setMaybeBot :: Config.Handle -> IO (Maybe Config.Handle)
+setMaybeBot configHandle@Config.Handle {hConfig = config, hLog = logHandle} = do
   let maybeBot = AT.parseMaybe (\x -> x A..: "bot" >>= A.parseJSON) config
   case maybeBot of
-    Just bot ->
-      logInfo logHandle "Bot is readable" >> return configHandle {hBot = bot}
-    Nothing ->
+    Just bot -> do
+      logInfo logHandle "Bot is readable"
+      return $ Just configHandle {hBot = bot}
+    Nothing -> do
       logError
         logHandle
-        "Can't read bot name, check his name in Config.json with name in Bot.hs" >>
-      logInfo logHandle "Will use Vk implementation" >>
-      return configHandle
+        "Can't read bot name, check his name in Config.json with name in Bot.hs"
+      return Nothing
 
 modifyConfig :: (Config -> Config) -> App ()
 modifyConfig func = do

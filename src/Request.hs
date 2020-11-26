@@ -1,6 +1,6 @@
 module Request
-  ( startRequest
-  , askRequest
+  ( maybeStartRequest
+  , maybeAskRequest
   , sendRequest
   ) where
 
@@ -10,19 +10,19 @@ import Config.Get
 import Request.Exception
 import Request.Modify
 
-import Control.Monad
+import Control.Monad (void)
 import qualified Data.Aeson as A
 import qualified Network.HTTP.Simple as HTTPSimple
 
-startRequest :: App A.Object
-startRequest = do
+maybeStartRequest :: App A.Object
+maybeStartRequest = do
   configHandle <- getApp
   request <- liftIO $ getStartRequest configHandle
   json <- tryHttpJson $ HTTPSimple.httpJSON request
   handleJsonResponse json
 
-askRequest :: App A.Object
-askRequest = do
+maybeAskRequest :: App A.Object
+maybeAskRequest = do
   configHandle <- getApp
   request <- liftIO $ getAskRequest configHandle
   json <- tryHttpJson $ HTTPSimple.httpJSON request

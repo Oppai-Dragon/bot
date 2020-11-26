@@ -10,47 +10,46 @@ import Config
 import Log
 
 import qualified Data.Aeson as A
-import qualified Data.Text as T
 import qualified Data.HashMap.Strict as HM
+import qualified Data.Text as T
 import GHC.Stack
 import qualified Network.HTTP.Client as HTTPClient
 import qualified Network.HTTP.Simple as HTTPSimple
 
-tryHttpJson :: HasCallStack => IO (HTTPSimple.Response A.Value) -> App A.Value
+tryHttpJson ::
+     HasCallStack => IO (HTTPSimple.Response A.Value) -> App (Maybe A.Value)
 tryHttpJson ioResponse = do
   Config.Handle {hLog = logHandle} <- getApp
   responseEither <- liftIO $ try ioResponse
   case responseEither of
     Right response -> do
       let json = HTTPSimple.getResponseBody response
-      return json
+      return $ Just json
     Left err -> do
       liftIO . logError logHandle $ show err
-      return A.Null
+      return Nothing
 
 tryParseRequest ::
      HasCallStack
   => IO HTTPSimple.Request
   -> Log.Handle
-  -> IO HTTPSimple.Request
+  -> IO (Maybe HTTPSimple.Request)
 tryParseRequest ioReq logHandle = do
   reqEither <- liftIO $ try ioReq
   case reqEither of
-    Right req -> return req
+    Right req -> return $ Just req
     Left err -> do
       liftIO . logError logHandle $ show err
-      liftIO $
-        logWarning logHandle "Will be used Network.HTTP.Client.defaultRequest"
-      return HTTPClient.defaultRequest
+      return Nothing
 
-handleJsonResponse :: HasCallStack => A.Value -> App A.Object
+handleJsonResponse :: HasCallStack => A.Value -> App (Maybe A.Object)
 handleJsonResponse value = do
   Config.Handle {hLog = logHandle} <- getApp
   let obj = fromObject value
   let requestFailedObj = fromObject $ getValue ["error"] obj
   let errorDescr = T.unpack . fromString $ getValue ["description"] obj
   let errorNum = Base.toInteger $ getValue ["error_code"] obj
-  let failCase = return HM.empty
+  let failCase = return Nothing
   if HM.null obj
     then do
       liftIO $ logError logHandle "Json from response is empty"
@@ -70,6 +69,6 @@ handleJsonResponse value = do
                _ -> return obj
 
 tryUnpackResponseHttpJson ::
-     HasCallStack => IO (HTTPSimple.Response A.Value) -> App A.Value
+     HasCallStack => IO (HTTPSimple.Response A.Value) -> App (Maybe A.Value)
 tryUnpackResponseHttpJson =
   fmap (getValue ["response"]) . (=<<) handleJsonResponse . tryHttpJson

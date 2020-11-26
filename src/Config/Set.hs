@@ -1,6 +1,6 @@
 module Config.Set
-  ( set
-  , setConfig
+  ( maybeSet
+  , maybeSetConfig
   ) where
 
 import Base
@@ -13,40 +13,38 @@ import qualified Data.Aeson as A
 import qualified Data.Aeson.Types as AT
 import qualified Data.ByteString.Lazy as BSL
 import qualified Data.HashMap.Strict as HM
+import Data.Maybe
 
-set :: FilePath -> IO A.Object
-set path = do
+maybeSet :: FilePath -> IO (Maybe A.Object)
+maybeSet path = do
   logPath <- setLogPath
   result <- try $ BSL.readFile path
   case result of
     Right bsl ->
       case A.decode bsl of
-        Just hm -> pure hm
-        Nothing -> pure HM.empty
+        Just hm -> pure $ Just hm
+        Nothing -> pure Nothing
     Left err -> do
       logError (Handle logPath Nothing) $ show err
-      pure HM.empty
+      pure Nothing
 
-setConfig :: IO A.Object
-setConfig = do
+maybeSetConfig :: IO (Maybe A.Object)
+maybeSetConfig = do
   logPath <- setLogPath
-  config <- set $ setPath "\\configs\\Config.json"
-  let maybeBot = AT.parseMaybe (\x -> x A..: "bot" >>= A.parseJSON) config
+  config <- fromJust <$> maybeSet (setPath "\\configs\\Config.json")
+  let maybeBot = AT.parseMaybe (\x -> x A..: "bot" >>= A.parseJSON) сonfig
   let maybeLevel =
         AT.parseMaybe (\x -> x A..: "logLevel" >>= A.parseJSON) config
   let logHandle = Handle logPath maybeLevel
-  botStr <-
-    fmap show $
-    case maybeBot of
-      Just x -> do
-        logInfo logHandle $ show x <> " implementation is found"
-        return x
-      Nothing -> do
-        logError
-          logHandle
-          "Can't find bot implementation, check his name in Config.json"
-        logInfo logHandle "Will be used Vk implementation"
-        return Vk
-  let botPath = "\\configs\\Bot\\" <> botStr <> "\\" <> botStr <> ".json"
-  botConfig <- set $ setPath botPath
-  return $ HM.union botConfig config
+  if isJust maybeBot
+    then do
+      let botStr = show $ fromJust maybeBot
+      logInfo logHandle $ botStr <> " implementation is found"
+      let botPath = "\\configs\\" <> botStr <> "\\" <> botStr <> ".json"
+      maybeBotConfig <- maybeSet $ setPath botPath
+      case maybeBotConfig of
+        Just botConfig -> return . Just $ HM.union botConfig config
+        Nothing -> return Nothing
+    else do
+      logError logHandle "Can't find bot implementation"
+      return Nothing

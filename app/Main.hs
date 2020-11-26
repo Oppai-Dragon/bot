@@ -6,6 +6,9 @@ import Session
 
 main :: IO ()
 main = do
-  handle <- Config.new
-  (a, _) <- runApp runBot handle
-  return a
+  maybeHandle <- Config.maybeNew
+  case maybeHandle of
+    Just handle -> do
+      _ <- runApp runBot handle
+      return ()
+    Nothing -> return ()

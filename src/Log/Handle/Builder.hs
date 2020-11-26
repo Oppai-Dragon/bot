@@ -9,10 +9,13 @@ import Log.Handle
 import qualified Data.Aeson as A
 import qualified Data.Aeson.Types as AT
 
-new :: IO Handle
+new :: IO (Maybe Handle)
 new = do
-  config <- setConfig
-  logPath <- setLogPath
-  let maybeLevel =
-        AT.parseMaybe (\x -> x A..: "logLevel" >>= A.parseJSON) config
-  return $ Handle logPath maybeLevel
+  maybeConfig <- maybeSetConfig
+  case maybeConfig of
+    Just config -> do
+      logPath <- setLogPath
+      let maybeLevel =
+            AT.parseMaybe (\x -> x A..: "logLevel" >>= A.parseJSON) config
+      return $ Just Handle {hLogPath = logPath, hMaybeLogLevel = maybeLevel}
+    Nothing -> return Nothing

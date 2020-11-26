@@ -25,7 +25,8 @@ testTelegramHandle =
 
 testLogHandle :: Log.Handle
 testLogHandle =
-  Log.Handle {hLogPath = setPath "\\logs\\Test log.txt", hLogLevel = Just DEBUG}
+  Log.Handle
+    {hLogPath = setPath "\\logs\\Test log.txt", hMaybeLogLevel = Just DEBUG}
 
 testTelegramConfig, testVkConfig :: Config
 testTelegramConfig =

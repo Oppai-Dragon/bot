@@ -1,15 +1,15 @@
 module Config.Get
-  ( getStartRequest
-  , getAskRequest
-  , getSendRequest
-  , getMsgGetByConversationMsgId
-  , getPhotosGetMsgUploadServerReq
-  , getDocsGetMsgUploadServerReq
-  , getPhotosSaveMsgPhotoReq
-  , getDocsSaveReq
-  , getPhotosGetReq
-  , getRequest
-  , getApiRequest
+  ( getMaybeStartRequest
+  , getMaybeAskRequest
+  , getMaybeSendRequest
+  , getMaybeMsgGetByConversationMsgId
+  , getMaybePhotosGetMsgUploadServerReq
+  , getMaybeDocsGetMsgUploadServerReq
+  , getMaybePhotosSaveMsgPhotoReq
+  , getMaybeDocsSaveReq
+  , getMaybePhotosGetReq
+  , getMaybeRequest
+  , getApiMaybeRequest
   , getRequestObj
   , getRequestPath
   , getRequestParams
@@ -38,32 +38,34 @@ type Field = T.Text
 
 type Method = T.Text
 
-getStartRequest, getAskRequest, getSendRequest, getMsgGetByConversationMsgId, getPhotosGetMsgUploadServerReq, getDocsGetMsgUploadServerReq, getPhotosSaveMsgPhotoReq, getDocsSaveReq, getPhotosGetReq ::
-     Config.Handle -> IO HTTPClient.Request
-getStartRequest = getRequest "start_request"
+getMaybeStartRequest, getMaybeAskRequest, getMaybeSendRequest, getMaybeMsgGetByConversationMsgId, getMaybePhotosGetMsgUploadServerReq, getMaybeDocsGetMsgUploadServerReq, getMaybePhotosSaveMsgPhotoReq, getMaybeDocsSaveReq, getMaybePhotosGetReq ::
+     Config.Handle -> IO (Maybe HTTPClient.Request)
+getMaybeStartRequest = getMaybeRequest "start_request"
 
-getAskRequest = getRequest "ask_request"
+getMaybeAskRequest = getMaybeRequest "ask_request"
 
-getSendRequest = getRequest "send_request"
+getMaybeSendRequest = getMaybeRequest "send_request"
 
-getMsgGetByConversationMsgId =
-  getApiRequest "messages.getByConversationMessageId"
+getMaybeMsgGetByConversationMsgId =
+  getApiMaybeRequest "messages.getByConversationMessageId"
 
-getPhotosGetMsgUploadServerReq = getApiRequest "photos.getMessagesUploadServer"
+getMaybePhotosGetMsgUploadServerReq =
+  getApiMaybeRequest "photos.getMessagesUploadServer"
 
-getDocsGetMsgUploadServerReq = getApiRequest "docs.getMessagesUploadServer"
+getMaybeDocsGetMsgUploadServerReq =
+  getApiMaybeRequest "docs.getMessagesUploadServer"
 
-getPhotosSaveMsgPhotoReq = getApiRequest "photos.saveMessagesPhoto"
+getMaybePhotosSaveMsgPhotoReq = getApiMaybeRequest "photos.saveMessagesPhoto"
 
-getDocsSaveReq = getApiRequest "docs.save"
+getMaybeDocsSaveReq = getApiMaybeRequest "docs.save"
 
-getPhotosGetReq = getApiRequest "photos.get"
+getMaybePhotosGetReq = getApiMaybeRequest "photos.get"
 
-getRequest :: Field -> Config.Handle -> IO HTTPClient.Request
-getRequest nameReq Config.Handle { hConfig = config
-                                 , hLog = logHandle
-                                 , hBot = bot
-                                 } =
+getMaybeRequest :: Field -> Config.Handle -> IO (Maybe HTTPClient.Request)
+getMaybeRequest nameReq Config.Handle { hConfig = config
+                                      , hLog = logHandle
+                                      , hBot = bot
+                                      } =
   let requestObj = getRequestObj nameReq config
       requestPath = getRequestPath requestObj
       requestQuery = getRequestQuery requestObj
@@ -73,11 +75,10 @@ getRequest nameReq Config.Handle { hConfig = config
       isRequestCollected =
         all not [requestObjBool, requestPathBool, requestParamsAndQueryBool]
    in if isRequestCollected
-        then return $ buildRequest requestPath requestQuery requestParams config
+        then return . Just $
+             buildRequest requestPath requestQuery requestParams config
         else do
-          logError
-            logHandle
-            "Request isn't collected, will be used default request from http-client"
+          logError logHandle "Request isn't collected"
           when requestObjBool . logWarning logHandle $
             "Can't find " <>
             T.unpack nameReq <> " object in " <> show bot <> ".json"
@@ -87,13 +88,13 @@ getRequest nameReq Config.Handle { hConfig = config
           when requestParamsAndQueryBool . logWarning logHandle $
             "Can't find field \"params\" in { \"" <>
             T.unpack nameReq <> "\": ...} in " <> show bot <> ".json"
-          return HTTPClient.defaultRequest
+          return Nothing
 
-getApiRequest :: Method -> Config.Handle -> IO HTTPClient.Request
-getApiRequest apiMethod Config.Handle { hConfig = config
-                                      , hLog = logHandle
-                                      , hBot = bot
-                                      } =
+getApiMaybeRequest :: Method -> Config.Handle -> IO (Maybe HTTPClient.Request)
+getApiMaybeRequest apiMethod Config.Handle { hConfig = config
+                                           , hLog = logHandle
+                                           , hBot = bot
+                                           } =
   let apiRequestObj = getRequestObj "api_request" config
       apiMethodObj = fromObject $ getValue ["api_methods", apiMethod] config
       methodParamArr = getValue ["params"] apiMethodObj
@@ -106,11 +107,10 @@ getApiRequest apiMethod Config.Handle { hConfig = config
       isRequestCollected =
         all not [requestObjBool, requestPathBool, requestParamsAndQueryBool]
    in if isRequestCollected
-        then return $ buildRequest requestPath requestQuery requestParams config
+        then return . Just $
+             buildRequest requestPath requestQuery requestParams config
         else do
-          logError
-            logHandle
-            "Request isn't collected, will be used default request from http-client"
+          logError logHandle "Request isn't collected"
           when requestObjBool . logWarning logHandle $
             "Can't find " <>
             T.unpack apiMethod <> " object in " <> show bot <> ".json"
@@ -120,7 +120,7 @@ getApiRequest apiMethod Config.Handle { hConfig = config
           when requestParamsAndQueryBool . logWarning logHandle $
             "Can't find field \"params\" in { \"" <>
             T.unpack apiMethod <> "\": ...} in " <> show bot <> ".json"
-          return HTTPClient.defaultRequest
+          return Nothing
 
 getRequestParamsAndBoolObjBoolPath ::
      A.Object -> Field -> ([(Field, Field)], Bool, Bool)
