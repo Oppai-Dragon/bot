@@ -256,7 +256,7 @@ ReaderT appears at the message processing level.
 
 ### Adding new bots
 
-Let the bot's name be Li. You need to create a folder in src/Bot/Li and the file src/Bot/Li/Li.json in it. And fill it in according to other <Bot>.json.
+Let the bot's name be Li. You need to create a folder in src/configs/Li and the file src/configs/Li/Li.json in it. And fill it in according to other <Bot>.json. And add name of file in .gitignore. For exporting git repository create src/configs/<Bot>/<Bot>.Overall.json and remove values which inizializating you, like access_token.
 
 ## Packages
 

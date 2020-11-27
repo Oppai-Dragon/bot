@@ -9,7 +9,7 @@ module Config.Get
   , getMaybeDocsSaveReq
   , getMaybePhotosGetReq
   , getMaybeRequest
-  , getApiMaybeRequest
+  , getMaybeApiRequest
   , getRequestObj
   , getRequestPath
   , getRequestParams
@@ -47,19 +47,19 @@ getMaybeAskRequest = getMaybeRequest "ask_request"
 getMaybeSendRequest = getMaybeRequest "send_request"
 
 getMaybeMsgGetByConversationMsgId =
-  getApiMaybeRequest "messages.getByConversationMessageId"
+  getMaybeApiRequest "messages.getByConversationMessageId"
 
 getMaybePhotosGetMsgUploadServerReq =
-  getApiMaybeRequest "photos.getMessagesUploadServer"
+  getMaybeApiRequest "photos.getMessagesUploadServer"
 
 getMaybeDocsGetMsgUploadServerReq =
-  getApiMaybeRequest "docs.getMessagesUploadServer"
+  getMaybeApiRequest "docs.getMessagesUploadServer"
 
-getMaybePhotosSaveMsgPhotoReq = getApiMaybeRequest "photos.saveMessagesPhoto"
+getMaybePhotosSaveMsgPhotoReq = getMaybeApiRequest "photos.saveMessagesPhoto"
 
-getMaybeDocsSaveReq = getApiMaybeRequest "docs.save"
+getMaybeDocsSaveReq = getMaybeApiRequest "docs.save"
 
-getMaybePhotosGetReq = getApiMaybeRequest "photos.get"
+getMaybePhotosGetReq = getMaybeApiRequest "photos.get"
 
 getMaybeRequest :: Field -> Config.Handle -> IO (Maybe HTTPClient.Request)
 getMaybeRequest nameReq Config.Handle { hConfig = config
@@ -90,8 +90,8 @@ getMaybeRequest nameReq Config.Handle { hConfig = config
             T.unpack nameReq <> "\": ...} in " <> show bot <> ".json"
           return Nothing
 
-getApiMaybeRequest :: Method -> Config.Handle -> IO (Maybe HTTPClient.Request)
-getApiMaybeRequest apiMethod Config.Handle { hConfig = config
+getMaybeApiRequest :: Method -> Config.Handle -> IO (Maybe HTTPClient.Request)
+getMaybeApiRequest apiMethod Config.Handle { hConfig = config
                                            , hLog = logHandle
                                            , hBot = bot
                                            } =

@@ -13,5 +13,5 @@ basePathTests =
 parsePathTest :: Test
 parsePathTest =
   TestCase $
-  assertEqual "for (parsePath \"E:\\users\\get\\src\")" "E:\\users\\get" $
-  parsePath "E:\\users\\get\\src"
+  assertEqual "for (parsePath \"E:/users/get/src\")" "E:/users/get" $
+  parsePath "E:/users/get/src"

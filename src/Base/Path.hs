@@ -12,13 +12,13 @@ import System.IO.Unsafe (unsafePerformIO)
 
 parsePath :: FilePath -> FilePath
 parsePath =
-  intercalate "\\" .
+  intercalate "/" .
   takeWhile (/= "src") .
   words .
   intercalate "" .
   map
     (\case
-       "\\" -> " "
+       "/" -> " "
        x -> x) .
   group
 

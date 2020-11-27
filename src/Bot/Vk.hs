@@ -178,7 +178,7 @@ uploadAttachmentServer typeName infoObj = do
   let title = getValue ["title"] infoObj
   modifyConfig $ HM.insert "title" title
   configHandle <- getApp
-  maybeAttachmentPath <- liftIO $ createAttachmentFile typeName url configHandle
+  maybeAttachmentPath <- liftIO $ maybeCreateAttachmentFile typeName url configHandle
   maybeResponseObj <- attachmentGetMsgUploadServer typeName
   if and [isJust maybeAttachmentPath, isJust maybeResponseObj]
     then do
@@ -190,19 +190,19 @@ uploadAttachmentServer typeName infoObj = do
       maybe failCase (updateAttachment typeName) maybeAttachmentObj
     else failCase
 
-createAttachmentFile :: TypeName -> Url -> Config.Handle -> IO (Maybe FilePath)
-createAttachmentFile typeName url Config.Handle { hConfig = config
+maybeCreateAttachmentFile :: TypeName -> Url -> Config.Handle -> IO (Maybe FilePath)
+maybeCreateAttachmentFile typeName url Config.Handle { hConfig = config
                                                 , hLog = logHandle
                                                 } = do
   let title = T.unpack . fromString $ getValue ["title"] config
   let parseFunc x =
         case typeName of
-          "photo" -> x <> "\\Photo." <> (take 3 . last . wordsBy (/= '.')) url
+          "photo" -> x <> "/Photo." <> (take 3 . last . wordsBy (/= '.')) url
           "audio_message" ->
-            x <> "\\AudioMessage." <> (take 3 . last . wordsBy (/= '.')) url
+            x <> "/AudioMessage." <> (take 3 . last . wordsBy (/= '.')) url
           _ ->
             x <>
-            "\\" <>
+            "/" <>
             (intercalate "." . take 2 . wordsBy (/= '.'))
               (title <> "." <> (T.unpack . fromString . getValue ["ext"]) config)
   maybeReq <- tryParseRequest (HTTPClient.parseRequest url) logHandle
