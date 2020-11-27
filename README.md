@@ -1,6 +1,6 @@
 # Bot using Long-Polling
 
-This is a simple echo bot - it sends back what it received. He works in a telegram and in VK.
+This is a simple echo bot - it sends back what it received. He works in a Telegram and in VK.
 
 ## How to install
 
