@@ -20,7 +20,7 @@ runBot = do
   liftIO $ logInfo logHandle $ show bot <> " bot is selected."
   maybeObj <- maybeStartRequest
   case maybeObj of
-    Just obj ->
+    Just obj -> do
       localConfig <- getKeys obj
       modifyConfig $ HM.union localConfig
       liveSession
@@ -32,7 +32,7 @@ liveSession :: App ()
 liveSession = do
   maybeObj <- maybeAskRequest
   case maybeObj of
-    Just obj ->
+    Just obj -> do
       updates <- getUpdates obj
       if null updates
         then liveSession

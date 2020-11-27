@@ -32,13 +32,13 @@ maybeSetConfig :: IO (Maybe A.Object)
 maybeSetConfig = do
   logPath <- setLogPath
   config <- fromJust <$> maybeSet (setPath "\\configs\\Config.json")
-  let maybeBot = AT.parseMaybe (\x -> x A..: "bot" >>= A.parseJSON) сonfig
+  let maybeBot = AT.parseMaybe (\x -> x A..: "bot" >>= A.parseJSON) config
   let maybeLevel =
         AT.parseMaybe (\x -> x A..: "logLevel" >>= A.parseJSON) config
   let logHandle = Handle logPath maybeLevel
   if isJust maybeBot
     then do
-      let botStr = show $ fromJust maybeBot
+      let botStr = show $ (fromJust maybeBot :: Bot)
       logInfo logHandle $ botStr <> " implementation is found"
       let botPath = "\\configs\\" <> botStr <> "\\" <> botStr <> ".json"
       maybeBotConfig <- maybeSet $ setPath botPath

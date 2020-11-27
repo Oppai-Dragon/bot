@@ -1,5 +1,5 @@
 module Log.Handle.Builder
-  ( new
+  ( maybeNew
   ) where
 
 import Config.Set
@@ -9,8 +9,8 @@ import Log.Handle
 import qualified Data.Aeson as A
 import qualified Data.Aeson.Types as AT
 
-new :: IO (Maybe Handle)
-new = do
+maybeNew :: IO (Maybe Handle)
+maybeNew = do
   maybeConfig <- maybeSetConfig
   case maybeConfig of
     Just config -> do

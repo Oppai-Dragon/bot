@@ -21,6 +21,7 @@ import qualified Data.Aeson as A
 import qualified Data.ByteString as BS
 import qualified Data.HashMap.Strict as HM
 import Data.List
+import Data.Maybe
 import qualified Data.Text as T
 import qualified Network.HTTP.Client as HTTPClient
 import qualified Network.HTTP.Client.MultipartFormData as HTTPClient
@@ -74,14 +75,17 @@ isFwdMsg = not . null . fromArrObject . getValue ["fwd_messages"]
 
 updateFwdMsg :: MessageObj -> App ()
 updateFwdMsg messageObj = do
-  responseobj <- updateConversationMsgIds messageObj
-  let fwdMsg =
-        A.String .
-        T.intercalate "," . map (toText . getValue ["id"]) . fromArrObject $
-        getValue ["items"] responseobj
-  modifyConfig $ HM.insert "forward_messages" fwdMsg
+  maybeResponseobj <- updateConversationMsgIds messageObj
+  case maybeResponseobj of
+    Nothing -> return ()
+    Just responseObj ->
+      let fwdMsg =
+            A.String .
+            T.intercalate "," . map (toText . getValue ["id"]) . fromArrObject $
+            getValue ["items"] responseObj
+       in modifyConfig $ HM.insert "forward_messages" fwdMsg
 
-updateConversationMsgIds :: MessageObj -> App ResponseObj
+updateConversationMsgIds :: MessageObj -> App (Maybe ResponseObj)
 updateConversationMsgIds messageObj = do
   let conversationMsgIds =
         A.String .
@@ -90,8 +94,12 @@ updateConversationMsgIds messageObj = do
         getValue ["fwd_messages"] messageObj
   modifyConfig $ HM.insert "conversation_message_ids" conversationMsgIds
   configHandle <- getApp
-  fmap fromObject . tryUnpackResponseHttpJson $
-    HTTPSimple.httpJSON =<< getMsgGetByConversationMsgId configHandle
+  maybeReq <- liftIO $ getMaybeMsgGetByConversationMsgId configHandle
+  case maybeReq of
+    Nothing -> return Nothing
+    Just req ->
+      fmap (maybe Nothing (Just . fromObject)) . tryUnpackResponseHttpJson $
+      HTTPSimple.httpJSON req
 
 clearAttachments :: App ()
 clearAttachments = do
@@ -166,38 +174,45 @@ uploadAttachmentServer :: TypeName -> InfoObj -> App ()
 uploadAttachmentServer typeName infoObj = do
   modifyConfig . HM.insert "ext" $ getValue ["ext"] infoObj
   url <- setAttachmentUrl typeName infoObj
+  let failCase = return ()
   let title = getValue ["title"] infoObj
   modifyConfig $ HM.insert "title" title
   configHandle <- getApp
-  attachmentPath <- liftIO $ createAttachmentFile typeName url configHandle
-  responseObj <- attachmentGetMsgUploadServer typeName
-  addAttachmentObj typeName attachmentPath responseObj
-  liftIO $ Dir.removeFile attachmentPath
-  attachmentObj <- attachmentSave typeName
-  updateAttachment typeName attachmentObj
+  maybeAttachmentPath <- liftIO $ createAttachmentFile typeName url configHandle
+  maybeResponseObj <- attachmentGetMsgUploadServer typeName
+  if and [isJust maybeAttachmentPath, isJust maybeResponseObj]
+    then do
+      let attachmentPath = fromJust maybeAttachmentPath
+      let responseObj = fromJust maybeResponseObj
+      addAttachmentObj typeName attachmentPath responseObj
+      liftIO $ Dir.removeFile attachmentPath
+      maybeAttachmentObj <- attachmentSave typeName
+      maybe failCase (updateAttachment typeName) maybeAttachmentObj
+    else failCase
 
-createAttachmentFile :: TypeName -> Url -> Config.Handle -> IO FilePath
+createAttachmentFile :: TypeName -> Url -> Config.Handle -> IO (Maybe FilePath)
 createAttachmentFile typeName url Config.Handle { hConfig = config
                                                 , hLog = logHandle
                                                 } = do
   let title = T.unpack . fromString $ getValue ["title"] config
   let parseFunc x =
         case typeName of
-          "photo" -> x <> "\\Photo." <> (last . wordsBy (/= '.')) url
+          "photo" -> x <> "\\Photo." <> (take 3 . last . wordsBy (/= '.')) url
           "audio_message" ->
-            x <> "\\AudioMessage." <> (last . wordsBy (/= '.')) url
+            x <> "\\AudioMessage." <> (take 3 . last . wordsBy (/= '.')) url
           _ ->
             x <>
             "\\" <>
             (intercalate "." . take 2 . wordsBy (/= '.'))
               (title <> "." <> (T.unpack . fromString . getValue ["ext"]) config)
-  attachmentBS <-
-    fmap HTTPClient.responseBody $
-    HTTPSimple.httpBS =<<
-    tryParseRequest (HTTPClient.parseRequest url) logHandle
-  attachmentPath <- parseFunc <$> getRepDir
-  BS.writeFile attachmentPath attachmentBS
-  return attachmentPath
+  maybeReq <- tryParseRequest (HTTPClient.parseRequest url) logHandle
+  case maybeReq of
+    Nothing -> return Nothing
+    Just req -> do
+      attachmentBS <- fmap HTTPClient.responseBody $ HTTPSimple.httpBS req
+      attachmentPath <- parseFunc <$> getRepDir
+      BS.writeFile attachmentPath attachmentBS
+      return $ Just attachmentPath
 
 setAttachmentUrl :: TypeName -> InfoObj -> App Url
 setAttachmentUrl typeName infoObj = do
@@ -220,7 +235,8 @@ checkUrl url =
   case url of
     "" -> do
       configHandle <- getApp
-      liftIO $ logError (hLog configHandle) "Failed on getting url of attachment"
+      liftIO $
+        logError (hLog configHandle) "Failed on getting url of attachment"
       return ""
     _ -> return url
 
@@ -242,70 +258,99 @@ getDocUrl = T.unpack . fromString . getValue ["url"]
 
 getAudioMsgUrl = T.unpack . fromString . getValue ["link_mp3"]
 
-attachmentGetMsgUploadServer :: TypeName -> App ResponseObj
+attachmentGetMsgUploadServer :: TypeName -> App (Maybe ResponseObj)
 attachmentGetMsgUploadServer typeName = do
   configHandle@Config.Handle {hLog = logHandle} <- getApp
-  resultObj <-
-    fmap fromObject . tryUnpackResponseHttpJson . (=<<) HTTPSimple.httpJSON $
+  let failCase = return Nothing
+  maybeReq <-
+    liftIO $
     case typeName of
-      "doc" -> getDocsGetMsgUploadServerReq configHandle
-      "audio_message" -> getDocsGetMsgUploadServerReq configHandle
-      "photo" -> getPhotosGetMsgUploadServerReq configHandle
+      "doc" -> getMaybeDocsGetMsgUploadServerReq configHandle
+      "audio_message" -> getMaybeDocsGetMsgUploadServerReq configHandle
+      "photo" -> getMaybePhotosGetMsgUploadServerReq configHandle
       _ -> do
         logError logHandle $ "Unknown type of attachment: " <> T.unpack typeName
-        return HTTPSimple.defaultRequest
-  liftIO . logDebug logHandle $ "Upload object: " <> show resultObj
-  return resultObj
+        return Nothing
+  case maybeReq of
+    Nothing -> failCase
+    Just req -> do
+      maybeResultObj <-
+        fmap (maybe Nothing (Just . fromObject)) . tryUnpackResponseHttpJson $
+        HTTPSimple.httpJSON req
+      case maybeResultObj of
+        Just resultObj -> do
+          liftIO . logDebug logHandle $ "Upload object: " <> show resultObj
+          return $ Just resultObj
+        Nothing -> failCase
 
-attachmentSave :: TypeName -> App ResponseObj
+attachmentSave :: TypeName -> App (Maybe ResponseObj)
 attachmentSave typeName = do
   configHandle@Config.Handle {hLog = logHandle} <- getApp
+  let failCase = return Nothing
+  let returnJust = return . Just
   let handleResponseObj =
         case typeName of
           "audio_message" ->
-            return . fromObject . getValue [typeName] . fromObject
-          "doc" -> return . fromObject . getValue [typeName] . fromObject
-          "photo" -> return . head . fromArrObject
+            returnJust . fromObject . getValue [typeName] . fromObject
+          "doc" -> returnJust . fromObject . getValue [typeName] . fromObject
+          "photo" -> returnJust . head . fromArrObject
           _ ->
             \_ -> do
               liftIO . logError logHandle $
                 "Unknown type of attachment: " <> T.unpack typeName
-              return HM.empty
-  responseObj <-
-    (=<<) handleResponseObj .
-    tryUnpackResponseHttpJson . (=<<) HTTPSimple.httpJSON $
+              failCase
+  maybeReq <-
+    liftIO $
     case typeName of
-      "doc" -> getDocsSaveReq configHandle
-      "audio_message" -> getDocsSaveReq configHandle
-      "photo" -> getPhotosSaveMsgPhotoReq configHandle
+      "doc" -> getMaybeDocsSaveReq configHandle
+      "audio_message" -> getMaybeDocsSaveReq configHandle
+      "photo" -> getMaybePhotosSaveMsgPhotoReq configHandle
       _ -> do
         logError logHandle $ "Unknown type of attachment: " <> T.unpack typeName
-        return HTTPSimple.defaultRequest
-  liftIO . logDebug logHandle $
-    T.unpack typeName <> " save object: " <> show responseObj
-  return responseObj
+        return Nothing
+  case maybeReq of
+    Nothing -> failCase
+    Just req -> do
+      maybeResultObj <- tryUnpackResponseHttpJson $ HTTPSimple.httpJSON req
+      let resultObj = fromJust maybeResultObj
+      maybeResponseObj <- handleResponseObj resultObj
+      let responseObj = fromJust maybeResponseObj
+      if and [isJust maybeResultObj, isJust maybeResponseObj]
+        then do
+          liftIO . logDebug logHandle $
+            T.unpack typeName <> " save object: " <> show responseObj
+          return $ Just responseObj
+        else failCase
 
 addAttachmentObj :: TypeName -> FilePath -> ResponseObj -> App ()
 addAttachmentObj typeName attachmentPath responseObj = do
   Config.Handle {hLog = logHandle} <- getApp
+  let failCase = return ()
   let url = T.unpack . fromString $ getValue ["upload_url"] responseObj
-  request <- liftIO $ tryParseRequest (HTTPClient.parseRequest url) logHandle
-  partName <- choosePartName typeName
-  let formData = HTTPClient.partFile partName attachmentPath
-  attachmentJson <-
-    tryHttpJson $
-    HTTPSimple.httpJSON =<< HTTPClient.formDataBody [formData] request
-  let attachmentObj = fromObject attachmentJson
-  liftIO . logDebug logHandle $
-    T.unpack typeName <> " json: " <> show attachmentJson
-  case typeName of
-    "doc" -> modifyConfig $ HM.union attachmentObj
-    "audio_message" -> modifyConfig $ HM.union attachmentObj
-    "photo" -> modifyConfig . HM.union $ HM.singleton "photo_obj" attachmentJson
-    _ -> do
-      liftIO . logError logHandle $
-        "Unknown type of attachment: " <> T.unpack typeName
-      return ()
+  maybeReq <- liftIO $ tryParseRequest (HTTPClient.parseRequest url) logHandle
+  case maybeReq of
+    Nothing -> failCase
+    Just request -> do
+      partName <- choosePartName typeName
+      let formData = HTTPClient.partFile partName attachmentPath
+      maybeAttachmentJson <-
+        tryHttpJson $
+        HTTPSimple.httpJSON =<< HTTPClient.formDataBody [formData] request
+      case maybeAttachmentJson of
+        Nothing -> failCase
+        Just attachmentJson -> do
+          let attachmentObj = fromObject attachmentJson
+          liftIO . logDebug logHandle $
+            T.unpack typeName <> " json: " <> show attachmentJson
+          case typeName of
+            "doc" -> modifyConfig $ HM.union attachmentObj
+            "audio_message" -> modifyConfig $ HM.union attachmentObj
+            "photo" ->
+              modifyConfig . HM.union $ HM.singleton "photo_obj" attachmentJson
+            _ -> do
+              liftIO . logError logHandle $
+                "Unknown type of attachment: " <> T.unpack typeName
+              failCase
 
 choosePartName :: TypeName -> App TypeName
 choosePartName typeName =

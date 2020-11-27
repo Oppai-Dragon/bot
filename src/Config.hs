@@ -5,7 +5,6 @@ module Config
   , ReqApp
   , Config.Handle(..)
   , Config.maybeNew
-  , setMaybeBot
   , modifyConfig
   , modifyReq
   ) where
@@ -42,8 +41,10 @@ maybeNew :: IO (Maybe Config.Handle)
 maybeNew = do
   maybeConfig <- maybeSetConfig
   maybeLogHandle <- Log.maybeNew
-  maybeBot <- setMaybeBot
-  if all isJust [maybeConfig, maybeLogHandle, maybeBot]
+  let maybeBot =
+        AT.parseMaybe (\x -> x A..: "bot" >>= A.parseJSON) $
+        fromJust maybeConfig
+  if and [isJust maybeConfig, isJust maybeLogHandle, isJust maybeBot]
     then return $
          Just
            Config.Handle
@@ -52,19 +53,6 @@ maybeNew = do
              , hBot = fromJust maybeBot
              }
     else return Nothing
-
-setMaybeBot :: Config.Handle -> IO (Maybe Config.Handle)
-setMaybeBot configHandle@Config.Handle {hConfig = config, hLog = logHandle} = do
-  let maybeBot = AT.parseMaybe (\x -> x A..: "bot" >>= A.parseJSON) config
-  case maybeBot of
-    Just bot -> do
-      logInfo logHandle "Bot is readable"
-      return $ Just configHandle {hBot = bot}
-    Nothing -> do
-      logError
-        logHandle
-        "Can't read bot name, check his name in Config.json with name in Bot.hs"
-      return Nothing
 
 modifyConfig :: (Config -> Config) -> App ()
 modifyConfig func = do

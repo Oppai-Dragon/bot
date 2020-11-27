@@ -14,24 +14,33 @@ import Control.Monad (void)
 import qualified Data.Aeson as A
 import qualified Network.HTTP.Simple as HTTPSimple
 
-maybeStartRequest :: App A.Object
+maybeStartRequest :: App (Maybe A.Object)
 maybeStartRequest = do
   configHandle <- getApp
-  request <- liftIO $ getStartRequest configHandle
-  json <- tryHttpJson $ HTTPSimple.httpJSON request
-  handleJsonResponse json
+  maybeReq <- liftIO $ getMaybeStartRequest configHandle
+  case maybeReq of
+    Nothing -> return Nothing
+    Just req -> do
+      maybeJson <- tryHttpJson $ HTTPSimple.httpJSON req
+      handleJsonResponse maybeJson
 
-maybeAskRequest :: App A.Object
+maybeAskRequest :: App (Maybe A.Object)
 maybeAskRequest = do
   configHandle <- getApp
-  request <- liftIO $ getAskRequest configHandle
-  json <- tryHttpJson $ HTTPSimple.httpJSON request
-  handleJsonResponse json
+  maybeReq <- liftIO $ getMaybeAskRequest configHandle
+  case maybeReq of
+    Nothing -> return Nothing
+    Just req -> do
+      maybeJson <- tryHttpJson $ HTTPSimple.httpJSON req
+      handleJsonResponse maybeJson
 
 sendRequest :: App ()
 sendRequest = do
   configHandle <- getApp
-  reqDefault <- liftIO $ getSendRequest configHandle
-  request <- evalApp modifyRequest reqDefault
-  json <- tryHttpJson $ HTTPSimple.httpJSON request
-  void $ handleJsonResponse json
+  maybeReqDefault <- liftIO $ getMaybeSendRequest configHandle
+  case maybeReqDefault of
+    Nothing -> return ()
+    Just reqDefault -> do
+      req <- evalApp modifyRequest reqDefault
+      maybeJson <- tryHttpJson $ HTTPSimple.httpJSON req
+      void $ handleJsonResponse maybeJson
