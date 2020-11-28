@@ -44,7 +44,7 @@ maybeNew = do
   let maybeBot =
         AT.parseMaybe (\x -> x A..: "bot" >>= A.parseJSON) $
         fromJust maybeConfig
-  if and [isJust maybeConfig, isJust maybeLogHandle, isJust maybeBot]
+  if isJust maybeConfig && isJust maybeLogHandle && isJust maybeBot
     then return $
          Just
            Config.Handle

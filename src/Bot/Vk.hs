@@ -98,7 +98,8 @@ updateConversationMsgIds messageObj = do
   case maybeReq of
     Nothing -> return Nothing
     Just req ->
-      fmap (maybe Nothing (Just . fromObject)) . tryUnpackResponseHttpJson $
+      fmap (maybe Nothing (checkObject . fromObject)) .
+      tryUnpackResponseHttpJson $
       HTTPSimple.httpJSON req
 
 clearAttachments :: App ()
@@ -178,9 +179,10 @@ uploadAttachmentServer typeName infoObj = do
   let title = getValue ["title"] infoObj
   modifyConfig $ HM.insert "title" title
   configHandle <- getApp
-  maybeAttachmentPath <- liftIO $ maybeCreateAttachmentFile typeName url configHandle
+  maybeAttachmentPath <-
+    liftIO $ maybeCreateAttachmentFile typeName url configHandle
   maybeResponseObj <- attachmentGetMsgUploadServer typeName
-  if and [isJust maybeAttachmentPath, isJust maybeResponseObj]
+  if isJust maybeAttachmentPath && isJust maybeResponseObj
     then do
       let attachmentPath = fromJust maybeAttachmentPath
       let responseObj = fromJust maybeResponseObj
@@ -190,10 +192,11 @@ uploadAttachmentServer typeName infoObj = do
       maybe failCase (updateAttachment typeName) maybeAttachmentObj
     else failCase
 
-maybeCreateAttachmentFile :: TypeName -> Url -> Config.Handle -> IO (Maybe FilePath)
+maybeCreateAttachmentFile ::
+     TypeName -> Url -> Config.Handle -> IO (Maybe FilePath)
 maybeCreateAttachmentFile typeName url Config.Handle { hConfig = config
-                                                , hLog = logHandle
-                                                } = do
+                                                     , hLog = logHandle
+                                                     } = do
   let title = T.unpack . fromString $ getValue ["title"] config
   let parseFunc x =
         case typeName of
@@ -209,7 +212,7 @@ maybeCreateAttachmentFile typeName url Config.Handle { hConfig = config
   case maybeReq of
     Nothing -> return Nothing
     Just req -> do
-      attachmentBS <- fmap HTTPClient.responseBody $ HTTPSimple.httpBS req
+      attachmentBS <- HTTPClient.responseBody <$> HTTPSimple.httpBS req
       attachmentPath <- parseFunc <$> getRepDir
       BS.writeFile attachmentPath attachmentBS
       return $ Just attachmentPath
@@ -275,7 +278,8 @@ attachmentGetMsgUploadServer typeName = do
     Nothing -> failCase
     Just req -> do
       maybeResultObj <-
-        fmap (maybe Nothing (Just . fromObject)) . tryUnpackResponseHttpJson $
+        fmap (maybe Nothing (checkObject . fromObject)) .
+        tryUnpackResponseHttpJson $
         HTTPSimple.httpJSON req
       case maybeResultObj of
         Just resultObj -> do
@@ -315,7 +319,7 @@ attachmentSave typeName = do
       let resultObj = fromJust maybeResultObj
       maybeResponseObj <- handleResponseObj resultObj
       let responseObj = fromJust maybeResponseObj
-      if and [isJust maybeResultObj, isJust maybeResponseObj]
+      if isJust maybeResultObj && isJust maybeResponseObj
         then do
           liftIO . logDebug logHandle $
             T.unpack typeName <> " save object: " <> show responseObj

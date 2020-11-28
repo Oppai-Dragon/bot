@@ -38,7 +38,7 @@ maybeSetConfig = do
   let logHandle = Handle logPath maybeLevel
   if isJust maybeBot
     then do
-      let botStr = show $ (fromJust maybeBot :: Bot)
+      let botStr = show (fromJust maybeBot :: Bot)
       logInfo logHandle $ botStr <> " implementation is found"
       let botPath = "/configs/" <> botStr <> "/" <> botStr <> ".json"
       maybeBotConfig <- maybeSet $ setPath botPath
