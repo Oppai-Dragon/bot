@@ -198,14 +198,12 @@ maybeCreateAttachmentFile typeName url Config.Handle { hConfig = config
                                                      , hLog = logHandle
                                                      } = do
   let title = T.unpack . fromString $ getValue ["title"] config
-  let parseFunc x =
+  let attachmentPath =
         case typeName of
-          "photo" -> x <> "/Photo." <> (take 3 . last . wordsBy (/= '.')) url
+          "photo" -> "Photo." <> (take 3 . last . wordsBy (/= '.')) url
           "audio_message" ->
-            x <> "/AudioMessage." <> (take 3 . last . wordsBy (/= '.')) url
+            "AudioMessage." <> (take 3 . last . wordsBy (/= '.')) url
           _ ->
-            x <>
-            "/" <>
             (intercalate "." . take 2 . wordsBy (/= '.'))
               (title <> "." <> (T.unpack . fromString . getValue ["ext"]) config)
   maybeReq <- tryParseRequest (HTTPClient.parseRequest url) logHandle
@@ -213,7 +211,6 @@ maybeCreateAttachmentFile typeName url Config.Handle { hConfig = config
     Nothing -> return Nothing
     Just req -> do
       attachmentBS <- HTTPClient.responseBody <$> HTTPSimple.httpBS req
-      attachmentPath <- parseFunc <$> getRepDir
       BS.writeFile attachmentPath attachmentBS
       return $ Just attachmentPath
 

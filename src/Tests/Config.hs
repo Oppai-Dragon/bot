@@ -6,7 +6,6 @@ module Tests.Config
   , testTelegramConfig
   ) where
 
-import Base
 import Bot
 import Config
 import Log
@@ -25,8 +24,7 @@ testTelegramHandle =
 
 testLogHandle :: Log.Handle
 testLogHandle =
-  Log.Handle
-    {hLogPath = setPath "/Test log.txt", hMaybeLogLevel = Just DEBUG}
+  Log.Handle {hLogPath = "Test log.txt", hMaybeLogLevel = Just DEBUG}
 
 testTelegramConfig, testVkConfig :: Config
 testTelegramConfig =

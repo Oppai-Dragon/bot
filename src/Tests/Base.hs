@@ -3,10 +3,9 @@ module Tests.Base
   ) where
 
 import Tests.Base.Aeson
-import Tests.Base.Path
 import Tests.Base.Prelude
 
 import Test.HUnit
 
 baseTests :: [Test]
-baseTests = baseAesonTests <> basePathTests <> basePreludeTests
+baseTests = baseAesonTests <> basePreludeTests

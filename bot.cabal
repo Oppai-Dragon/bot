@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: ef19e3df5e5224b5ae58e5f11cbeb26010df6cb021be4392680154a27a21b126
+-- hash: d979a21adb32db7da04657b2d2e46e63a79eb49316ade40525adc4fe72f45914
 
 name:           bot
 version:        0.1.0.0
@@ -31,7 +31,6 @@ library
       Base.Aeson
       Base.Interface
       Base.Lift
-      Base.Path
       Base.Prelude
       Base.Random
       Base.Text
@@ -56,7 +55,6 @@ library
       Tests
       Tests.Base
       Tests.Base.Aeson
-      Tests.Base.Path
       Tests.Base.Prelude
       Tests.Bot
       Tests.Bot.Telegram
