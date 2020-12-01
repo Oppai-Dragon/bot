@@ -1,7 +1,6 @@
 module Config.Update
   ( getKeys
   , getLastObj
-  , checkUpdate
   , updateConfig
   , updateRepeatN
   , parseMessage
@@ -21,9 +20,9 @@ import Log
 import qualified Data.Aeson as A
 import qualified Data.Aeson.Types as AT
 import Data.Function
+import Data.Maybe (maybe)
 import qualified Data.Scientific as Scientific
 import qualified Text.Parsec as P
-
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Text as T
 
@@ -59,17 +58,6 @@ getLastObj value =
             else last objArr
         Nothing -> HM.empty
 
-checkUpdate :: Updates -> App Updates
-checkUpdate updates = do
-  configHandle <- getApp
-  let updateIdOld = getValue ["offset"] $ hConfig configHandle
-  case HM.lookup "update_id" updates of
-    Just value ->
-      if updateIdOld == value
-        then return HM.empty
-        else return updates
-    Nothing -> return updates
-
 updateConfig :: Updates -> Bot -> App ()
 updateConfig updates bot = do
   msg <-
@@ -90,10 +78,7 @@ updateRepeatN msg = do
   let repeatN =
         case lastMsg of
           A.String "/repeat" ->
-            A.Number $
-            if elem msgStr ["5", "4", "3", "2", "1"]
-              then read msgStr
-              else 1
+            maybe (A.Number 1) A.Number $ readMaybe msgStr
           _ -> oldRepeatN
   modifyConfig $ HM.insert "repeatN" repeatN
 

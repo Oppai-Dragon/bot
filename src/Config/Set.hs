@@ -19,10 +19,7 @@ maybeSet path = do
   logPath <- setLogPath
   result <- try $ BSL.readFile path
   case result of
-    Right bsl ->
-      case A.decode bsl of
-        Just hm -> pure $ Just hm
-        Nothing -> pure Nothing
+    Right bsl -> pure $ A.decode bsl
     Left err -> do
       logError (Handle logPath Nothing) $ show err
       pure Nothing

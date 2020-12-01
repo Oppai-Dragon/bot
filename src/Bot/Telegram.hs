@@ -3,6 +3,7 @@ module Bot.Telegram
   , update
   , updateKeys
   , updateMethod
+  , checkUpdate
   , handleAttachment
   , getMsg
   ) where
@@ -58,6 +59,17 @@ updateMethod = do
         Just (attachment, value@(A.Array _)) ->
           liftApp $ handleAttachment attachment (head $ fromArrObject value)
         _ -> return ()
+
+checkUpdate :: Updates -> App Updates
+checkUpdate updates = do
+  configHandle <- getApp
+  let updateIdOld = getValue ["offset"] $ hConfig configHandle
+  case HM.lookup "update_id" updates of
+    Just value ->
+      if updateIdOld == value
+        then return HM.empty
+        else return updates
+    Nothing -> return updates
 
 handleAttachment :: T.Text -> A.Object -> App ()
 handleAttachment attachment attachmentObj = do

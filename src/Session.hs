@@ -27,16 +27,11 @@ runBot = do
       liftIO $ logFinishMsg logHandle
     Nothing -> return ()
 
-
 liveSession :: App ()
 liveSession = do
   maybeObj <- maybeAskRequest
   case maybeObj of
-    Just obj -> do
-      updates <- getUpdates obj
-      if null updates
-        then liveSession
-        else echoMessage updates >> liveSession
+    Just obj -> getUpdates obj >>= echoMessage updates >> liveSession
     Nothing -> return ()
 
 echoMessage :: [Updates] -> App ()
