@@ -1,15 +1,15 @@
 module Config.Get
-  ( getMaybeStartRequest
-  , getMaybeAskRequest
-  , getMaybeSendRequest
-  , getMaybeMsgGetByConversationMsgId
-  , getMaybePhotosGetMsgUploadServerReq
-  , getMaybeDocsGetMsgUploadServerReq
-  , getMaybePhotosSaveMsgPhotoReq
-  , getMaybeDocsSaveReq
-  , getMaybePhotosGetReq
-  , getMaybeRequest
-  , getMaybeApiRequest
+  ( getMaybeTStartRequest
+  , getMaybeTAskRequest
+  , getMaybeTSendRequest
+  , getMaybeTMsgGetByConversationMsgId
+  , getMaybeTPhotosGetMsgUploadServerReq
+  , getMaybeTDocsGetMsgUploadServerReq
+  , getMaybeTPhotosSaveMsgPhotoReq
+  , getMaybeTDocsSaveReq
+  , getMaybeTPhotosGetReq
+  , getMaybeTRequest
+  , getMaybeTApiRequest
   , getRequestObj
   , getRequestPath
   , getRequestParams
@@ -25,7 +25,8 @@ import Base
 import Config
 import Log
 
-import Control.Monad
+import Control.Monad (when)
+import Control.Monad.Trans.Maybe (MaybeT(..))
 import qualified Data.Aeson as A
 import qualified Data.ByteString as BS
 import qualified Data.HashMap.Strict as HM
@@ -38,31 +39,31 @@ type Field = T.Text
 
 type Method = T.Text
 
-getMaybeStartRequest, getMaybeAskRequest, getMaybeSendRequest, getMaybeMsgGetByConversationMsgId, getMaybePhotosGetMsgUploadServerReq, getMaybeDocsGetMsgUploadServerReq, getMaybePhotosSaveMsgPhotoReq, getMaybeDocsSaveReq, getMaybePhotosGetReq ::
-     Config.Handle -> IO (Maybe HTTPClient.Request)
-getMaybeStartRequest = getMaybeRequest "start_request"
+getMaybeTStartRequest, getMaybeTAskRequest, getMaybeTSendRequest, getMaybeTMsgGetByConversationMsgId, getMaybeTPhotosGetMsgUploadServerReq, getMaybeTDocsGetMsgUploadServerReq, getMaybeTPhotosSaveMsgPhotoReq, getMaybeTDocsSaveReq, getMaybeTPhotosGetReq ::
+     Config.Handle -> MaybeT IO HTTPClient.Request
+getMaybeTStartRequest = getMaybeTRequest "start_request"
 
-getMaybeAskRequest = getMaybeRequest "ask_request"
+getMaybeTAskRequest = getMaybeTRequest "ask_request"
 
-getMaybeSendRequest = getMaybeRequest "send_request"
+getMaybeTSendRequest = getMaybeTRequest "send_request"
 
-getMaybeMsgGetByConversationMsgId =
-  getMaybeApiRequest "messages.getByConversationMessageId"
+getMaybeTMsgGetByConversationMsgId =
+  getMaybeTApiRequest "messages.getByConversationMessageId"
 
-getMaybePhotosGetMsgUploadServerReq =
-  getMaybeApiRequest "photos.getMessagesUploadServer"
+getMaybeTPhotosGetMsgUploadServerReq =
+  getMaybeTApiRequest "photos.getMessagesUploadServer"
 
-getMaybeDocsGetMsgUploadServerReq =
-  getMaybeApiRequest "docs.getMessagesUploadServer"
+getMaybeTDocsGetMsgUploadServerReq =
+  getMaybeTApiRequest "docs.getMessagesUploadServer"
 
-getMaybePhotosSaveMsgPhotoReq = getMaybeApiRequest "photos.saveMessagesPhoto"
+getMaybeTPhotosSaveMsgPhotoReq = getMaybeTApiRequest "photos.saveMessagesPhoto"
 
-getMaybeDocsSaveReq = getMaybeApiRequest "docs.save"
+getMaybeTDocsSaveReq = getMaybeTApiRequest "docs.save"
 
-getMaybePhotosGetReq = getMaybeApiRequest "photos.get"
+getMaybeTPhotosGetReq = getMaybeTApiRequest "photos.get"
 
-getMaybeRequest :: Field -> Config.Handle -> IO (Maybe HTTPClient.Request)
-getMaybeRequest nameReq Config.Handle { hConfig = config
+getMaybeTRequest :: Field -> Config.Handle -> MaybeT IO HTTPClient.Request
+getMaybeTRequest nameReq Config.Handle { hConfig = config
                                       , hLog = logHandle
                                       , hBot = bot
                                       } =
@@ -75,23 +76,22 @@ getMaybeRequest nameReq Config.Handle { hConfig = config
       isRequestCollected =
         all not [requestObjBool, requestPathBool, requestParamsAndQueryBool]
    in if isRequestCollected
-        then return . Just $
-             buildRequest requestPath requestQuery requestParams config
+        then return $ buildRequest requestPath requestQuery requestParams config
         else do
-          logError logHandle "Request isn't collected"
-          when requestObjBool . logWarning logHandle $
+          liftIO $ logError logHandle "Request isn't collected"
+          when requestObjBool . liftIO . logWarning logHandle $
             "Can't find " <>
             T.unpack nameReq <> " object in " <> show bot <> ".json"
-          when requestPathBool . logWarning logHandle $
+          when requestPathBool . liftIO . logWarning logHandle $
             "Can't find field \"path\" in { \"" <>
             T.unpack nameReq <> "\": ...} in " <> show bot <> ".json"
-          when requestParamsAndQueryBool . logWarning logHandle $
+          when requestParamsAndQueryBool . liftIO . logWarning logHandle $
             "Can't find field \"params\" in { \"" <>
             T.unpack nameReq <> "\": ...} in " <> show bot <> ".json"
-          return Nothing
+          MaybeT $ return Nothing
 
-getMaybeApiRequest :: Method -> Config.Handle -> IO (Maybe HTTPClient.Request)
-getMaybeApiRequest apiMethod Config.Handle { hConfig = config
+getMaybeTApiRequest :: Method -> Config.Handle -> MaybeT IO HTTPClient.Request
+getMaybeTApiRequest apiMethod Config.Handle { hConfig = config
                                            , hLog = logHandle
                                            , hBot = bot
                                            } =
@@ -107,20 +107,19 @@ getMaybeApiRequest apiMethod Config.Handle { hConfig = config
       isRequestCollected =
         all not [requestObjBool, requestPathBool, requestParamsAndQueryBool]
    in if isRequestCollected
-        then return . Just $
-             buildRequest requestPath requestQuery requestParams config
+        then return $ buildRequest requestPath requestQuery requestParams config
         else do
-          logError logHandle "Request isn't collected"
-          when requestObjBool . logWarning logHandle $
+          liftIO $ logError logHandle "Request isn't collected"
+          when requestObjBool . liftIO . logWarning logHandle $
             "Can't find " <>
             T.unpack apiMethod <> " object in " <> show bot <> ".json"
-          when requestPathBool . logWarning logHandle $
+          when requestPathBool . liftIO . logWarning logHandle $
             "Can't find field \"path\" in { \"" <>
             T.unpack apiMethod <> "\": ...} in " <> show bot <> ".json"
-          when requestParamsAndQueryBool . logWarning logHandle $
+          when requestParamsAndQueryBool . liftIO . logWarning logHandle $
             "Can't find field \"params\" in { \"" <>
             T.unpack apiMethod <> "\": ...} in " <> show bot <> ".json"
-          return Nothing
+          MaybeT $ return Nothing
 
 getRequestParamsAndBoolObjBoolPath ::
      A.Object -> Field -> ([(Field, Field)], Bool, Bool)

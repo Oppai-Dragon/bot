@@ -9,16 +9,16 @@ module Config
   , modifyReq
   ) where
 
-import Base
+import Base (getApp, modifyApp, putApp)
 import Bot
-import Config.Set
+import Config.Create
 import Log
 
+import Control.Monad.Trans.Maybe
 import Control.Monad.Trans.Reader
 import Control.Monad.Trans.State.Strict
 import qualified Data.Aeson as A
 import qualified Data.Aeson.Types as AT
-import Data.Maybe
 import qualified Network.HTTP.Client as HTTPClient
 
 type Config = A.Object
@@ -37,22 +37,13 @@ data Handle =
     }
   deriving (Show, Eq)
 
-maybeNew :: IO (Maybe Config.Handle)
+maybeNew :: MaybeT IO Config.Handle
 maybeNew = do
-  maybeConfig <- maybeSetConfig
-  maybeLogHandle <- Log.maybeNew
-  let maybeBot =
-        AT.parseMaybe (\x -> x A..: "bot" >>= A.parseJSON) $
-        fromJust maybeConfig
-  if isJust maybeConfig && isJust maybeLogHandle && isJust maybeBot
-    then return $
-         Just
-           Config.Handle
-             { hConfig = fromJust maybeConfig
-             , hLog = fromJust maybeLogHandle
-             , hBot = fromJust maybeBot
-             }
-    else return Nothing
+  config <- maybeTCreateConfig
+  logHandle <- Log.maybeNew
+  bot <-
+    MaybeT . return $ AT.parseMaybe (\x -> x A..: "bot" >>= A.parseJSON) config
+  return Config.Handle {hConfig = config, hLog = logHandle, hBot = bot}
 
 modifyConfig :: (Config -> Config) -> App ()
 modifyConfig func = do

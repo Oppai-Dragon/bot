@@ -1,7 +1,7 @@
 module Request
-  ( maybeStartRequest
-  , maybeAskRequest
-  , sendRequest
+  ( maybeTStartRequest
+  , maybeTAskRequest
+  , maybeTSendRequest
   ) where
 
 import Base
@@ -10,37 +10,29 @@ import Config.Get
 import Request.Exception
 import Request.Modify
 
+import Control.Monad.Trans.Maybe
 import Control.Monad (void)
 import qualified Data.Aeson as A
 import qualified Network.HTTP.Simple as HTTPSimple
 
-maybeStartRequest :: App (Maybe A.Object)
-maybeStartRequest = do
-  configHandle <- getApp
-  maybeReq <- liftIO $ getMaybeStartRequest configHandle
-  case maybeReq of
-    Nothing -> return Nothing
-    Just req -> do
-      maybeJson <- tryHttpJson $ HTTPSimple.httpJSON req
-      handleJsonResponse maybeJson
+maybeTStartRequest :: MaybeT App A.Object
+maybeTStartRequest = do
+  configHandle <- liftApp getApp
+  req <- liftMaybeT $ getMaybeTStartRequest configHandle
+  json <- tryHttpJson $ HTTPSimple.httpJSON req
+  handleJsonResponse json
 
-maybeAskRequest :: App (Maybe A.Object)
-maybeAskRequest = do
-  configHandle <- getApp
-  maybeReq <- liftIO $ getMaybeAskRequest configHandle
-  case maybeReq of
-    Nothing -> return Nothing
-    Just req -> do
-      maybeJson <- tryHttpJson $ HTTPSimple.httpJSON req
-      handleJsonResponse maybeJson
+maybeTAskRequest :: MaybeT App A.Object
+maybeTAskRequest = do
+  configHandle <- liftApp getApp
+  req <- liftMaybeT $ getMaybeTAskRequest configHandle
+  json <- tryHttpJson $ HTTPSimple.httpJSON req
+  handleJsonResponse json
 
-sendRequest :: App ()
-sendRequest = do
-  configHandle <- getApp
-  maybeReqDefault <- liftIO $ getMaybeSendRequest configHandle
-  case maybeReqDefault of
-    Nothing -> return ()
-    Just reqDefault -> do
-      req <- evalApp modifyRequest reqDefault
-      maybeJson <- tryHttpJson $ HTTPSimple.httpJSON req
-      void $ handleJsonResponse maybeJson
+maybeTSendRequest :: MaybeT App ()
+maybeTSendRequest = do
+  configHandle <- liftApp getApp
+  reqDefault <- liftMaybeT $ getMaybeTSendRequest configHandle
+  req <- liftApp $ evalApp modifyRequest reqDefault
+  json <- tryHttpJson $ HTTPSimple.httpJSON req
+  void $ handleJsonResponse json

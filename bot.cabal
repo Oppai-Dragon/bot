@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: d979a21adb32db7da04657b2d2e46e63a79eb49316ade40525adc4fe72f45914
+-- hash: 4b3c5ff4560999113f76877c538a1f9656997b65cce80e88ea19d65a2529abb1
 
 name:           bot
 version:        0.1.0.0
@@ -39,8 +39,8 @@ library
       Bot.Telegram
       Bot.Vk
       Config
+      Config.Create
       Config.Get
-      Config.Set
       Config.Update
       Log
       Log.Console

@@ -2,20 +2,19 @@ module Log.Handle.Builder
   ( maybeNew
   ) where
 
-import Config.Set
-import Log.File
-import Log.Handle
+import Base (liftIO)
+import Config.Create (maybeTCreateConfig)
+import Log.File (setLogPath)
+import Log.Handle (Handle(..))
 
+import Control.Monad.Trans.Maybe (MaybeT)
 import qualified Data.Aeson as A
 import qualified Data.Aeson.Types as AT
 
-maybeNew :: IO (Maybe Handle)
+maybeNew :: MaybeT IO Handle
 maybeNew = do
-  maybeConfig <- maybeSetConfig
-  case maybeConfig of
-    Just config -> do
-      logPath <- setLogPath
-      let maybeLevel =
-            AT.parseMaybe (\x -> x A..: "logLevel" >>= A.parseJSON) config
-      return $ Just Handle {hLogPath = logPath, hMaybeLogLevel = maybeLevel}
-    Nothing -> return Nothing
+  config <- maybeTCreateConfig
+  logPath <- liftIO setLogPath
+  let maybeLevel =
+        AT.parseMaybe (\x -> x A..: "logLevel" >>= A.parseJSON) config
+  return Handle {hLogPath = logPath, hMaybeLogLevel = maybeLevel}

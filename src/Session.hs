@@ -4,11 +4,13 @@ module Session
 
 import Base
 import Bot
+import qualified Bot.Telegram as Telegram
 import Config
 import Config.Update
 import Log
 import Request
 
+import Control.Monad.Trans.Maybe (runMaybeT)
 import qualified Data.Aeson as A
 import qualified Data.HashMap.Strict as HM
 
@@ -18,7 +20,7 @@ runBot :: App ()
 runBot = do
   Config.Handle {hLog = logHandle, hBot = bot} <- getApp
   liftIO $ logInfo logHandle $ show bot <> " bot is selected."
-  maybeObj <- maybeStartRequest
+  maybeObj <- runMaybeT maybeTStartRequest
   case maybeObj of
     Just obj -> do
       localConfig <- getKeys obj
@@ -29,9 +31,9 @@ runBot = do
 
 liveSession :: App ()
 liveSession = do
-  maybeObj <- maybeAskRequest
+  maybeObj <- runMaybeT maybeTAskRequest
   case maybeObj of
-    Just obj -> getUpdates obj >>= echoMessage updates >> liveSession
+    Just obj -> getUpdates obj >>= echoMessage >> liveSession
     Nothing -> return ()
 
 echoMessage :: [Updates] -> App ()
@@ -40,7 +42,7 @@ echoMessage (updates:rest) = do
   updates' <-
     case bot of
       Vk -> return updates
-      Telegram -> checkUpdate updates
+      Telegram -> Telegram.checkUpdate updates
   if HM.null updates'
     then echoMessage rest
     else do
@@ -56,5 +58,5 @@ sendMessage :: Integer -> App ()
 sendMessage 0 = return ()
 sendMessage n = do
   updateRandomId
-  sendRequest
+  _ <- runMaybeT maybeTSendRequest
   sendMessage (n - 1)

@@ -4,9 +4,11 @@ import Base
 import Config
 import Session
 
+import Control.Monad.Trans.Maybe (MaybeT(..))
+
 main :: IO ()
 main = do
-  maybeHandle <- Config.maybeNew
+  maybeHandle <- runMaybeT Config.maybeNew
   case maybeHandle of
     Just handle -> do
       _ <- runApp runBot handle

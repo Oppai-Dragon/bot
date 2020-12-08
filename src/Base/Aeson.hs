@@ -10,7 +10,6 @@ module Base.Aeson
   , fromArrString
   , fromArrObject
   , deleteKeys
-  , checkObject
   , insertWithPush
   , findValue
   , getValue
@@ -74,12 +73,6 @@ fromArrObject = fromMaybe [] . AT.parseMaybe A.parseJSON
 
 deleteKeys :: Keys -> A.Object -> A.Object
 deleteKeys = foldr ((.) . HM.delete) id
-
-checkObject :: A.Object -> Maybe A.Object
-checkObject x =
-  if HM.null x
-    then Nothing
-    else Just x
 
 insertWithPush :: Field -> A.Value -> A.Object -> A.Object
 insertWithPush field value obj =

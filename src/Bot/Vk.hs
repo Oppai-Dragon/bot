@@ -17,6 +17,7 @@ import Log
 import Request.Exception
 
 import Control.Monad
+import Control.Monad.Trans.Maybe
 import qualified Data.Aeson as A
 import qualified Data.ByteString as BS
 import qualified Data.HashMap.Strict as HM
@@ -75,7 +76,7 @@ isFwdMsg = not . null . fromArrObject . getValue ["fwd_messages"]
 
 updateFwdMsg :: MessageObj -> App ()
 updateFwdMsg messageObj = do
-  maybeResponseobj <- updateConversationMsgIds messageObj
+  maybeResponseobj <- runMaybeT $ updateConversationMsgIds messageObj
   case maybeResponseobj of
     Nothing -> return ()
     Just responseObj ->
@@ -85,22 +86,20 @@ updateFwdMsg messageObj = do
             getValue ["items"] responseObj
        in modifyConfig $ HM.insert "forward_messages" fwdMsg
 
-updateConversationMsgIds :: MessageObj -> App (Maybe ResponseObj)
+updateConversationMsgIds :: MessageObj -> MaybeT App ResponseObj
 updateConversationMsgIds messageObj = do
   let conversationMsgIds =
         A.String .
         T.intercalate "," .
         map (toText . getValue ["conversation_message_id"]) . fromArrObject $
         getValue ["fwd_messages"] messageObj
-  modifyConfig $ HM.insert "conversation_message_ids" conversationMsgIds
-  configHandle <- getApp
-  maybeReq <- liftIO $ getMaybeMsgGetByConversationMsgId configHandle
-  case maybeReq of
-    Nothing -> return Nothing
-    Just req ->
-      fmap (maybe Nothing (checkObject . fromObject)) .
-      tryUnpackResponseHttpJson $
-      HTTPSimple.httpJSON req
+  liftApp . modifyConfig $
+    HM.insert "conversation_message_ids" conversationMsgIds
+  configHandle <- liftApp getApp
+  value <-
+    (liftMaybeT . getMaybeTMsgGetByConversationMsgId) configHandle >>=
+    tryUnpackResponseHttpJson . HTTPSimple.httpJSON
+  return $ fromObject value
 
 clearAttachments :: App ()
 clearAttachments = do
@@ -146,13 +145,17 @@ handleAttachments (attachmentObj:rest) = do
   let typeNameValue = getValue ["type"] attachmentObj
   let typeName = fromString typeNameValue
   let infoObj = fromObject $ getValue [typeName] attachmentObj
+  let handleVoidMaybeT = fmap (fromMaybe ())
   liftIO . logDebug logHandle $ "Find vk attachments: " <> T.unpack typeName
   modifyConfig $ HM.insert "type" typeNameValue
   case typeName of
     "sticker" -> handleSticker infoObj
-    "photo" -> uploadAttachmentServer typeName infoObj
-    "doc" -> uploadAttachmentServer typeName infoObj
-    "audio_message" -> uploadAttachmentServer typeName infoObj
+    "photo" ->
+      handleVoidMaybeT . runMaybeT $ uploadAttachmentServer typeName infoObj
+    "doc" ->
+      handleVoidMaybeT . runMaybeT $ uploadAttachmentServer typeName infoObj
+    "audio_message" ->
+      handleVoidMaybeT . runMaybeT $ uploadAttachmentServer typeName infoObj
     "audio" -> updateAttachment typeName infoObj
     "video" -> updateAttachment typeName infoObj
     _ ->
@@ -171,29 +174,23 @@ handleSticker attachmentObj =
          modifyConfig $ HM.insert field value
          modifyConfig . HM.insert "attachment" $ A.String typeName
 
-uploadAttachmentServer :: TypeName -> InfoObj -> App ()
+uploadAttachmentServer :: TypeName -> InfoObj -> MaybeT App ()
 uploadAttachmentServer typeName infoObj = do
-  modifyConfig . HM.insert "ext" $ getValue ["ext"] infoObj
-  url <- setAttachmentUrl typeName infoObj
-  let failCase = return ()
+  liftApp . modifyConfig . HM.insert "ext" $ getValue ["ext"] infoObj
+  url <- liftApp $ setAttachmentUrl typeName infoObj
   let title = getValue ["title"] infoObj
-  modifyConfig $ HM.insert "title" title
-  configHandle <- getApp
-  maybeAttachmentPath <-
-    liftIO $ maybeCreateAttachmentFile typeName url configHandle
-  maybeResponseObj <- attachmentGetMsgUploadServer typeName
-  if isJust maybeAttachmentPath && isJust maybeResponseObj
-    then do
-      let attachmentPath = fromJust maybeAttachmentPath
-      let responseObj = fromJust maybeResponseObj
-      addAttachmentObj typeName attachmentPath responseObj
-      liftIO $ Dir.removeFile attachmentPath
-      maybeAttachmentObj <- attachmentSave typeName
-      maybe failCase (updateAttachment typeName) maybeAttachmentObj
-    else failCase
+  liftApp . modifyConfig $ HM.insert "title" title
+  configHandle <- liftApp getApp
+  attachmentPath <-
+    liftMaybeT $ maybeCreateAttachmentFile typeName url configHandle
+  responseObj <- attachmentGetMsgUploadServer typeName
+  addAttachmentObj typeName attachmentPath responseObj
+  liftIO $ Dir.removeFile attachmentPath
+  attachmentObj <- attachmentSave typeName
+  liftApp $ updateAttachment typeName attachmentObj
 
 maybeCreateAttachmentFile ::
-     TypeName -> Url -> Config.Handle -> IO (Maybe FilePath)
+     TypeName -> Url -> Config.Handle -> MaybeT IO FilePath
 maybeCreateAttachmentFile typeName url Config.Handle { hConfig = config
                                                      , hLog = logHandle
                                                      } = do
@@ -206,13 +203,10 @@ maybeCreateAttachmentFile typeName url Config.Handle { hConfig = config
           _ ->
             (intercalate "." . take 2 . wordsBy (/= '.'))
               (title <> "." <> (T.unpack . fromString . getValue ["ext"]) config)
-  maybeReq <- tryParseRequest (HTTPClient.parseRequest url) logHandle
-  case maybeReq of
-    Nothing -> return Nothing
-    Just req -> do
-      attachmentBS <- HTTPClient.responseBody <$> HTTPSimple.httpBS req
-      BS.writeFile attachmentPath attachmentBS
-      return $ Just attachmentPath
+  req <- tryParseRequest (HTTPClient.parseRequest url) logHandle
+  attachmentBS <- liftIO $ HTTPClient.responseBody <$> HTTPSimple.httpBS req
+  liftIO $ BS.writeFile attachmentPath attachmentBS
+  return attachmentPath
 
 setAttachmentUrl :: TypeName -> InfoObj -> App Url
 setAttachmentUrl typeName infoObj = do
@@ -258,100 +252,76 @@ getDocUrl = T.unpack . fromString . getValue ["url"]
 
 getAudioMsgUrl = T.unpack . fromString . getValue ["link_mp3"]
 
-attachmentGetMsgUploadServer :: TypeName -> App (Maybe ResponseObj)
+attachmentGetMsgUploadServer :: TypeName -> MaybeT App ResponseObj
 attachmentGetMsgUploadServer typeName = do
-  configHandle@Config.Handle {hLog = logHandle} <- getApp
-  let failCase = return Nothing
-  maybeReq <-
-    liftIO $
+  configHandle@Config.Handle {hLog = logHandle} <- liftApp getApp
+  req <-
+    liftMaybeT $
     case typeName of
-      "doc" -> getMaybeDocsGetMsgUploadServerReq configHandle
-      "audio_message" -> getMaybeDocsGetMsgUploadServerReq configHandle
-      "photo" -> getMaybePhotosGetMsgUploadServerReq configHandle
+      "doc" -> getMaybeTDocsGetMsgUploadServerReq configHandle
+      "audio_message" -> getMaybeTDocsGetMsgUploadServerReq configHandle
+      "photo" -> getMaybeTPhotosGetMsgUploadServerReq configHandle
       _ -> do
-        logError logHandle $ "Unknown type of attachment: " <> T.unpack typeName
-        return Nothing
-  case maybeReq of
-    Nothing -> failCase
-    Just req -> do
-      maybeResultObj <-
-        fmap (maybe Nothing (checkObject . fromObject)) .
-        tryUnpackResponseHttpJson $
-        HTTPSimple.httpJSON req
-      case maybeResultObj of
-        Just resultObj -> do
-          liftIO . logDebug logHandle $ "Upload object: " <> show resultObj
-          return $ Just resultObj
-        Nothing -> failCase
+        liftIO . logError logHandle $
+          "Unknown type of attachment: " <> T.unpack typeName
+        MaybeT $ return Nothing
+  resultValue <- tryUnpackResponseHttpJson $ HTTPSimple.httpJSON req
+  let resultObj = fromObject resultValue
+  liftIO . logDebug logHandle $ "Upload object: " <> show resultObj
+  return resultObj
 
-attachmentSave :: TypeName -> App (Maybe ResponseObj)
+attachmentSave :: TypeName -> MaybeT App ResponseObj
 attachmentSave typeName = do
-  configHandle@Config.Handle {hLog = logHandle} <- getApp
-  let failCase = return Nothing
-  let returnJust = return . Just
+  configHandle@Config.Handle {hLog = logHandle} <- liftApp getApp
+  let returnFromObject = return . fromObject . getValue [typeName] . fromObject
   let handleResponseObj =
         case typeName of
-          "audio_message" ->
-            returnJust . fromObject . getValue [typeName] . fromObject
-          "doc" -> returnJust . fromObject . getValue [typeName] . fromObject
-          "photo" -> returnJust . head . fromArrObject
+          "audio_message" -> returnFromObject
+          "doc" -> returnFromObject
+          "photo" -> return . head . fromArrObject
           _ ->
             \_ -> do
-              liftIO . logError logHandle $
+              liftApp . liftIO . logError logHandle $
                 "Unknown type of attachment: " <> T.unpack typeName
-              failCase
-  maybeReq <-
-    liftIO $
+              MaybeT $ return Nothing
+  req <-
+    liftMaybeT $
     case typeName of
-      "doc" -> getMaybeDocsSaveReq configHandle
-      "audio_message" -> getMaybeDocsSaveReq configHandle
-      "photo" -> getMaybePhotosSaveMsgPhotoReq configHandle
+      "doc" -> getMaybeTDocsSaveReq configHandle
+      "audio_message" -> getMaybeTDocsSaveReq configHandle
+      "photo" -> getMaybeTPhotosSaveMsgPhotoReq configHandle
       _ -> do
-        logError logHandle $ "Unknown type of attachment: " <> T.unpack typeName
-        return Nothing
-  case maybeReq of
-    Nothing -> failCase
-    Just req -> do
-      maybeResultObj <- tryUnpackResponseHttpJson $ HTTPSimple.httpJSON req
-      let resultObj = fromJust maybeResultObj
-      maybeResponseObj <- handleResponseObj resultObj
-      let responseObj = fromJust maybeResponseObj
-      if isJust maybeResultObj && isJust maybeResponseObj
-        then do
-          liftIO . logDebug logHandle $
-            T.unpack typeName <> " save object: " <> show responseObj
-          return $ Just responseObj
-        else failCase
+        liftIO . logError logHandle $
+          "Unknown type of attachment: " <> T.unpack typeName
+        MaybeT $ return Nothing
+  resultObj <- tryUnpackResponseHttpJson $ HTTPSimple.httpJSON req
+  responseObj <- handleResponseObj resultObj
+  liftIO . logDebug logHandle $
+    T.unpack typeName <> " save object: " <> show responseObj
+  return responseObj
 
-addAttachmentObj :: TypeName -> FilePath -> ResponseObj -> App ()
+addAttachmentObj :: TypeName -> FilePath -> ResponseObj -> MaybeT App ()
 addAttachmentObj typeName attachmentPath responseObj = do
-  Config.Handle {hLog = logHandle} <- getApp
-  let failCase = return ()
+  Config.Handle {hLog = logHandle} <- liftApp getApp
   let url = T.unpack . fromString $ getValue ["upload_url"] responseObj
-  maybeReq <- liftIO $ tryParseRequest (HTTPClient.parseRequest url) logHandle
-  case maybeReq of
-    Nothing -> failCase
-    Just request -> do
-      partName <- choosePartName typeName
-      let formData = HTTPClient.partFile partName attachmentPath
-      maybeAttachmentJson <-
-        tryHttpJson $
-        HTTPSimple.httpJSON =<< HTTPClient.formDataBody [formData] request
-      case maybeAttachmentJson of
-        Nothing -> failCase
-        Just attachmentJson -> do
-          let attachmentObj = fromObject attachmentJson
-          liftIO . logDebug logHandle $
-            T.unpack typeName <> " json: " <> show attachmentJson
-          case typeName of
-            "doc" -> modifyConfig $ HM.union attachmentObj
-            "audio_message" -> modifyConfig $ HM.union attachmentObj
-            "photo" ->
-              modifyConfig . HM.union $ HM.singleton "photo_obj" attachmentJson
-            _ -> do
-              liftIO . logError logHandle $
-                "Unknown type of attachment: " <> T.unpack typeName
-              failCase
+  req <- liftMaybeT $ tryParseRequest (HTTPClient.parseRequest url) logHandle
+  partName <- liftApp $ choosePartName typeName
+  let formData = HTTPClient.partFile partName attachmentPath
+  attachmentJson <-
+    tryHttpJson $ HTTPSimple.httpJSON =<< HTTPClient.formDataBody [formData] req
+  let attachmentObj = fromObject attachmentJson
+  liftApp . liftIO . logDebug logHandle $
+    T.unpack typeName <> " json: " <> show attachmentJson
+  liftApp $
+    case typeName of
+      "doc" -> modifyConfig $ HM.union attachmentObj
+      "audio_message" -> modifyConfig $ HM.union attachmentObj
+      "photo" ->
+        modifyConfig . HM.union $ HM.singleton "photo_obj" attachmentJson
+      _ -> do
+        liftIO . logError logHandle $
+          "Unknown type of attachment: " <> T.unpack typeName
+        return ()
 
 choosePartName :: TypeName -> App TypeName
 choosePartName typeName =

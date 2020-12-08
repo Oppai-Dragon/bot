@@ -20,11 +20,12 @@ import Log
 import qualified Data.Aeson as A
 import qualified Data.Aeson.Types as AT
 import Data.Function
-import Data.Maybe (maybe)
-import qualified Data.Scientific as Scientific
-import qualified Text.Parsec as P
 import qualified Data.HashMap.Strict as HM
+import Data.Maybe (fromMaybe)
+import qualified Data.Scientific as Scientific
 import qualified Data.Text as T
+import Text.Read (readMaybe)
+import qualified Text.Parsec as P
 
 type Message = T.Text
 
@@ -77,8 +78,7 @@ updateRepeatN msg = do
   let oldRepeatN = getValue ["repeatN"] config
   let repeatN =
         case lastMsg of
-          A.String "/repeat" ->
-            maybe (A.Number 1) A.Number $ readMaybe msgStr
+          A.String "/repeat" -> A.Number . fromMaybe 1 $ readMaybe msgStr
           _ -> oldRepeatN
   modifyConfig $ HM.insert "repeatN" repeatN
 
