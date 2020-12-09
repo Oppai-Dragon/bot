@@ -33,7 +33,7 @@ type Updates = A.Object
 
 getKeys :: A.Object -> App Updates
 getKeys obj = do
-  Config.Handle {hConfig = config, hLog = logHandle, hBot = bot} <- getApp
+  Config.Handle {hConfig = config, hConfigLogHandle = logHandle, hConfigBot = bot} <- getApp
   let field = getUnpackField "start_request" config
   let updateObj =
         case AT.parseMaybe (A..: field) obj of
@@ -84,7 +84,7 @@ updateRepeatN msg = do
 
 parseMessage :: Message -> App Message
 parseMessage msg = do
-  Config.Handle {hLog = logHandle} <- getApp
+  Config.Handle {hConfigLogHandle = logHandle} <- getApp
   let parseFunc = do
         _ <- P.char '['
         name1 <- P.many $ P.letter P.<|> P.digit
@@ -124,7 +124,7 @@ updateRandomId = do
 
 getUpdates :: A.Object -> App [Updates]
 getUpdates json = do
-  Config.Handle {hConfig = config, hBot = bot} <- getApp
+  Config.Handle {hConfig = config, hConfigBot = bot} <- getApp
   let field = getUnpackField "ask_request" config
   let updates = fromArrObject $ getValue [field] json
   case bot of

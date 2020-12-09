@@ -28,7 +28,7 @@ getKeys obj =
 
 update :: ObjApp Message
 update = do
-  Config.Handle {hLog = logHandle} <- liftApp getApp
+  Config.Handle {hConfigLogHandle = logHandle} <- liftApp getApp
   updates <- askSubApp
   liftApp . liftIO . logInfo logHandle $ "Updates telegram: " <> show updates
   updateKeys
@@ -73,7 +73,7 @@ checkUpdate updates = do
 
 handleAttachment :: T.Text -> A.Object -> App ()
 handleAttachment attachment attachmentObj = do
-  Config.Handle {hLog = logHandle} <- getApp
+  Config.Handle {hConfigLogHandle = logHandle} <- getApp
   liftIO . logInfo logHandle $ "Telegram attachments: " <> T.unpack attachment
   let method = (toUpper . T.head) attachment `T.cons` T.tail attachment
   let fileId = getValue ["file_id"] attachmentObj

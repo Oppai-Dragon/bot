@@ -16,16 +16,15 @@ import qualified Data.Aeson as A
 import qualified Network.HTTP.Simple as HTTPSimple
 
 maybeTStartRequest :: MaybeT App A.Object
-maybeTStartRequest = do
-  configHandle <- liftApp getApp
-  req <- liftMaybeT $ getMaybeTStartRequest configHandle
-  json <- tryHttpJson $ HTTPSimple.httpJSON req
-  handleJsonResponse json
+maybeTStartRequest = maybeTReqWithObject getMaybeTStartRequest
 
 maybeTAskRequest :: MaybeT App A.Object
-maybeTAskRequest = do
+maybeTAskRequest = maybeTReqWithObject getMaybeTAskRequest
+
+maybeTReqWithObject :: (Config.Handle -> MaybeT IO HTTPSimple.Request) -> MaybeT App A.Object
+maybeTReqWithObject getMaybeTReqFunc = do
   configHandle <- liftApp getApp
-  req <- liftMaybeT $ getMaybeTAskRequest configHandle
+  req <- liftMaybeT $ getMaybeTReqFunc configHandle
   json <- tryHttpJson $ HTTPSimple.httpJSON req
   handleJsonResponse json
 

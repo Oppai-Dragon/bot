@@ -19,7 +19,7 @@ import qualified Network.HTTP.Simple as HTTPSimple
 tryHttpJson ::
      HasCallStack => IO (HTTPSimple.Response A.Value) -> MaybeT App A.Value
 tryHttpJson ioResponse = do
-  Config.Handle {hLog = logHandle} <- liftApp getApp
+  Config.Handle {hConfigLogHandle = logHandle} <- liftApp getApp
   responseEither <- liftIO $ try ioResponse
   case responseEither of
     Right response -> return $ HTTPSimple.getResponseBody response
@@ -42,7 +42,7 @@ tryParseRequest ioReq logHandle = do
 
 handleJsonResponse :: HasCallStack => A.Value -> MaybeT App A.Object
 handleJsonResponse value = do
-  Config.Handle {hLog = logHandle} <- liftApp getApp
+  Config.Handle {hConfigLogHandle = logHandle} <- liftApp getApp
   let obj = fromObject value
   let requestFailedObj = fromObject $ getValue ["error"] obj
   let errorDescr = T.unpack . fromString $ getValue ["description"] obj

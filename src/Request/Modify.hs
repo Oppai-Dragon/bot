@@ -22,7 +22,7 @@ import qualified Network.HTTP.Simple as HTTPSimple
 
 modifyRequest :: ReqApp HTTPSimple.Request
 modifyRequest = do
-  Config.Handle {hConfig = config, hBot = bot} <- liftApp getApp
+  Config.Handle {hConfig = config, hConfigBot = bot} <- liftApp getApp
   when (isNeedKeyboard config) addKeyboard
   case bot of
     Telegram ->
@@ -45,7 +45,7 @@ isNeedSticker conf =
 
 addKeyboard, addVkSticker :: ReqApp ()
 addKeyboard = do
-  Config.Handle {hConfig = config, hLog = logHandle} <- liftApp getApp
+  Config.Handle {hConfig = config, hConfigLogHandle = logHandle} <- liftApp getApp
   liftApp . liftIO $ logDebug logHandle "Add keyboard"
   modifyReq $
     case getKeyboard config of

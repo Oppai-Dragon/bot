@@ -18,7 +18,7 @@ type Updates = A.Object
 
 runBot :: App ()
 runBot = do
-  Config.Handle {hLog = logHandle, hBot = bot} <- getApp
+  Config.Handle {hConfigLogHandle = logHandle, hConfigBot = bot} <- getApp
   liftIO $ logInfo logHandle $ show bot <> " bot is selected."
   maybeObj <- runMaybeT maybeTStartRequest
   case maybeObj of
@@ -38,7 +38,7 @@ liveSession = do
 
 echoMessage :: [Updates] -> App ()
 echoMessage (updates:rest) = do
-  Config.Handle {hConfig = config, hLog = logHandle, hBot = bot} <- getApp
+  Config.Handle {hConfig = config, hConfigLogHandle = logHandle, hConfigBot = bot} <- getApp
   updates' <-
     case bot of
       Vk -> return updates

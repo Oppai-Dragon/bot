@@ -33,13 +33,13 @@ logMsg -- Log a message using the given logger at a given level
   -> Level
   -> String -- The log text itself
   -> IO ()
-logMsg (Handle path maybeLevel) level text = do
+logMsg Handle {hLogMaybeLevel = maybeLevel, hLogFileHandle = fileHandle} level text = do
   time <- getTime
   let prettyLoc = lastPrettyCallStack callStack
   let msg = time <> "-" <> prettyLog level text <> "\n\t" <> prettyLoc <> "\n"
   case maybeLevel of
-    Just currentLevel -> when (currentLevel <= level) $ writeLog path msg
-    Nothing -> writeLog path msg
+    Just currentLevel -> when (currentLevel <= level) $ writeLog fileHandle msg
+    Nothing -> writeLog fileHandle msg
 
 -------------------------------------------------------------------------------
 -- * Utility Functions
@@ -62,7 +62,7 @@ try :: IO a -> IO (Either SomeException a)
 try = Control.Exception.try
 
 logFinishMsg :: Handle -> IO ()
-logFinishMsg (Handle path _) = writeLog path "\n\n\n"
+logFinishMsg Handle { hLogFileHandle = fileHandle } = writeLog fileHandle "\n\n\n"
 
 -------------------------------------------------------------------------------
 -- * Readables

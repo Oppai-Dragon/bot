@@ -13,18 +13,19 @@ import Log
 import qualified Data.Aeson as A
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Vector as V
+import System.IO (stdout)
 
 testVkHandle, testTelegramHandle :: Config.Handle
 testVkHandle =
-  Config.Handle {hConfig = testVkConfig, hBot = Vk, hLog = testLogHandle}
+  Config.Handle {hConfig = testVkConfig, hConfigBot = Vk, hConfigLogHandle = testLogHandle}
 
 testTelegramHandle =
   Config.Handle
-    {hConfig = testTelegramConfig, hBot = Telegram, hLog = testLogHandle}
+    {hConfig = testTelegramConfig, hConfigBot = Telegram, hConfigLogHandle = testLogHandle}
 
 testLogHandle :: Log.Handle
 testLogHandle =
-  Log.Handle {hLogPath = "Test log.txt", hMaybeLogLevel = Just DEBUG}
+  Log.Handle {hLogMaybeLevel = Just DEBUG, hLogFileHandle = stdout}
 
 testTelegramConfig, testVkConfig :: Config
 testTelegramConfig =

@@ -50,7 +50,7 @@ getKeys = return
 
 update :: ObjApp Message
 update = do
-  Config.Handle {hLog = logHandle} <- liftApp getApp
+  Config.Handle {hConfigLogHandle = logHandle} <- liftApp getApp
   updates <- askSubApp
   liftApp . liftIO . logInfo logHandle $ "Updates vk: " <> show updates
   liftApp clearAttachments
@@ -122,7 +122,7 @@ updateAttachment typeName attachmentObj =
           text -> "_" <> text
       attachment = typeName <> ownerIdText <> "_" <> objIdText <> accessKey
    in do configHandle <- getApp
-         liftIO . logDebug (hLog configHandle) $
+         liftIO . logDebug (hConfigLogHandle configHandle) $
            "Vk attachment: " <> T.unpack attachment
          modifyConfig . insertWithPush "attachment" $ A.String attachment
 
@@ -133,7 +133,7 @@ updateAttachments = do
   let attachmentsObjArr =
         fromArrObject $ getValue ["attachments"] attachmentsObj
   liftApp $ handleAttachments attachmentsObjArr
-  Config.Handle {hConfig = config, hLog = logHandle} <- liftApp getApp
+  Config.Handle {hConfig = config, hConfigLogHandle = logHandle} <- liftApp getApp
   let attachments = getValue ["attachment"] config
   liftApp . liftIO . logDebug logHandle $
     "Vk attachments: " <> (T.unpack . fromString) attachments
@@ -141,7 +141,7 @@ updateAttachments = do
 handleAttachments :: [Attachment] -> App ()
 handleAttachments [] = return ()
 handleAttachments (attachmentObj:rest) = do
-  Config.Handle {hLog = logHandle} <- getApp
+  Config.Handle {hConfigLogHandle = logHandle} <- getApp
   let typeNameValue = getValue ["type"] attachmentObj
   let typeName = fromString typeNameValue
   let infoObj = fromObject $ getValue [typeName] attachmentObj
@@ -169,7 +169,7 @@ handleSticker attachmentObj =
       field = "sticker_id"
       value = getValue [field] attachmentObj
    in do configHandle <- getApp
-         liftIO . logDebug (hLog configHandle) $
+         liftIO . logDebug (hConfigLogHandle configHandle) $
            "Sticker_id: " <> (T.unpack . toText) value
          modifyConfig $ HM.insert field value
          modifyConfig . HM.insert "attachment" $ A.String typeName
@@ -192,7 +192,7 @@ uploadAttachmentServer typeName infoObj = do
 maybeCreateAttachmentFile ::
      TypeName -> Url -> Config.Handle -> MaybeT IO FilePath
 maybeCreateAttachmentFile typeName url Config.Handle { hConfig = config
-                                                     , hLog = logHandle
+                                                     , hConfigLogHandle = logHandle
                                                      } = do
   let title = T.unpack . fromString $ getValue ["title"] config
   let attachmentPath =
@@ -210,7 +210,7 @@ maybeCreateAttachmentFile typeName url Config.Handle { hConfig = config
 
 setAttachmentUrl :: TypeName -> InfoObj -> App Url
 setAttachmentUrl typeName infoObj = do
-  Config.Handle {hLog = logHandle} <- getApp
+  Config.Handle {hConfigLogHandle = logHandle} <- getApp
   url <-
     (=<<) checkUrl $
     case typeName of
@@ -230,7 +230,7 @@ checkUrl url =
     "" -> do
       configHandle <- getApp
       liftIO $
-        logError (hLog configHandle) "Failed on getting url of attachment"
+        logError (hConfigLogHandle configHandle) "Failed on getting url of attachment"
       return ""
     _ -> return url
 
@@ -254,7 +254,7 @@ getAudioMsgUrl = T.unpack . fromString . getValue ["link_mp3"]
 
 attachmentGetMsgUploadServer :: TypeName -> MaybeT App ResponseObj
 attachmentGetMsgUploadServer typeName = do
-  configHandle@Config.Handle {hLog = logHandle} <- liftApp getApp
+  configHandle@Config.Handle {hConfigLogHandle = logHandle} <- liftApp getApp
   req <-
     liftMaybeT $
     case typeName of
@@ -272,7 +272,7 @@ attachmentGetMsgUploadServer typeName = do
 
 attachmentSave :: TypeName -> MaybeT App ResponseObj
 attachmentSave typeName = do
-  configHandle@Config.Handle {hLog = logHandle} <- liftApp getApp
+  configHandle@Config.Handle {hConfigLogHandle = logHandle} <- liftApp getApp
   let returnFromObject = return . fromObject . getValue [typeName] . fromObject
   let handleResponseObj =
         case typeName of
@@ -302,7 +302,7 @@ attachmentSave typeName = do
 
 addAttachmentObj :: TypeName -> FilePath -> ResponseObj -> MaybeT App ()
 addAttachmentObj typeName attachmentPath responseObj = do
-  Config.Handle {hLog = logHandle} <- liftApp getApp
+  Config.Handle {hConfigLogHandle = logHandle} <- liftApp getApp
   let url = T.unpack . fromString $ getValue ["upload_url"] responseObj
   req <- liftMaybeT $ tryParseRequest (HTTPClient.parseRequest url) logHandle
   partName <- liftApp $ choosePartName typeName
@@ -330,7 +330,7 @@ choosePartName typeName =
     "doc" -> return "file"
     "audio_message" -> return "file"
     _ -> do
-      Config.Handle {hLog = logHandle} <- getApp
+      Config.Handle {hConfigLogHandle = logHandle} <- getApp
       liftIO . logError logHandle $
         "Unknown type of attachment: " <> T.unpack typeName
       return ""

@@ -15,5 +15,5 @@ setLogPath = do
   let logPath = logsDir <> "/" <> show day <> ".txt"
   return logPath
 
-writeLog :: FilePath -> String -> IO ()
-writeLog = IO.appendFile
+writeLog :: IO.Handle -> String -> IO ()
+writeLog = IO.hPutStrLn

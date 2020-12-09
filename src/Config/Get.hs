@@ -64,9 +64,9 @@ getMaybeTPhotosGetReq = getMaybeTApiRequest "photos.get"
 
 getMaybeTRequest :: Field -> Config.Handle -> MaybeT IO HTTPClient.Request
 getMaybeTRequest nameReq Config.Handle { hConfig = config
-                                      , hLog = logHandle
-                                      , hBot = bot
-                                      } =
+                                       , hConfigLogHandle = logHandle
+                                       , hConfigBot = bot
+                                       } =
   let requestObj = getRequestObj nameReq config
       requestPath = getRequestPath requestObj
       requestQuery = getRequestQuery requestObj
@@ -92,9 +92,9 @@ getMaybeTRequest nameReq Config.Handle { hConfig = config
 
 getMaybeTApiRequest :: Method -> Config.Handle -> MaybeT IO HTTPClient.Request
 getMaybeTApiRequest apiMethod Config.Handle { hConfig = config
-                                           , hLog = logHandle
-                                           , hBot = bot
-                                           } =
+                                            , hConfigLogHandle = logHandle
+                                            , hConfigBot = bot
+                                            } =
   let apiRequestObj = getRequestObj "api_request" config
       apiMethodObj = fromObject $ getValue ["api_methods", apiMethod] config
       methodParamArr = getValue ["params"] apiMethodObj

@@ -32,8 +32,8 @@ type ReqApp = StateT HTTPClient.Request App
 data Handle =
   Handle
     { hConfig :: Config
-    , hLog :: Log.Handle
-    , hBot :: Bot
+    , hConfigLogHandle :: Log.Handle
+    , hConfigBot :: Bot
     }
   deriving (Show, Eq)
 
@@ -43,7 +43,7 @@ maybeNew = do
   logHandle <- Log.maybeNew
   bot <-
     MaybeT . return $ AT.parseMaybe (\x -> x A..: "bot" >>= A.parseJSON) config
-  return Config.Handle {hConfig = config, hLog = logHandle, hBot = bot}
+  return Config.Handle {hConfig = config, hConfigLogHandle = logHandle, hConfigBot = bot}
 
 modifyConfig :: (Config -> Config) -> App ()
 modifyConfig func = do
